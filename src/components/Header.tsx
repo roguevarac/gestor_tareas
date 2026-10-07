@@ -6,12 +6,12 @@ import { dayKey, formatMinutes, startOfDay, todayLong } from '../lib/time';
 import { downloadFile, makeBackup, parseBackup } from '../lib/backup';
 import { Fish, MiniFish } from './Fish';
 import { Modal } from './Modal';
-import { IconBook, IconDots, IconDownload, IconMail, IconUpload } from './Icons';
+import { IconBook, IconDots, IconDownload, IconUpload } from './Icons';
+import { useInstallPrompt } from '../hooks/useInstallPrompt';
 
 export function Header() {
   const log = useTasks((s) => s.log);
   const setLogOpen = useUI((s) => s.setLogOpen);
-  const setHelpOpen = useUI((s) => s.setHelpOpen);
   const today = startOfDay();
   const todays = log.filter((e) => e.completedAt >= today);
   const minutes = todays.reduce((a, e) => a + (e.minutes ?? 0), 0);
@@ -36,14 +36,6 @@ export function Header() {
         <button type="button" className="top-btn" onClick={() => setLogOpen(true)}>
           <IconBook size={17} /> <span className="hide-sm">Bitácora</span>
         </button>
-        <button
-          type="button"
-          className="top-btn"
-          onClick={() => setHelpOpen(true)}
-          title="Cómo vincular mails de Outlook"
-        >
-          <IconMail size={17} /> <span className="hide-sm">Outlook</span>
-        </button>
         <MoreMenu />
       </div>
     </header>
@@ -56,6 +48,7 @@ function MoreMenu() {
   const fileRef = useRef<HTMLInputElement>(null);
   const toast = useUI((s) => s.toast);
   const [pending, setPending] = useState<ReturnType<typeof parseBackup> | null>(null);
+  const install = useInstallPrompt();
 
   useEffect(() => {
     if (!open) return;
@@ -127,6 +120,18 @@ function MoreMenu() {
             <button type="button" role="menuitem" onClick={() => fileRef.current?.click()}>
               <IconUpload size={16} /> Restaurar una copia…
             </button>
+            {install.canInstall && (
+              <button
+                type="button"
+                role="menuitem"
+                onClick={() => {
+                  setOpen(false);
+                  void install.prompt();
+                }}
+              >
+                <IconDownload size={16} /> Instalar en esta computadora
+              </button>
+            )}
             <p className="menu-version">Mis tareas · versión {__APP_VERSION__}</p>
           </motion.div>
         )}

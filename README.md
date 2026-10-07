@@ -38,7 +38,7 @@ encontrarlo con la búsqueda de Outlook si el link deja de andar, por ejemplo si
 1. **Outlook en el navegador (recomendado).** Abrí `outlook.office.com` (o `outlook.cloud.microsoft`), hacé clic en el
    mail y copiá la dirección de la barra (`Ctrl+L`, `Ctrl+C`). Después, en Mis tareas, pegá con `Ctrl+V` en cualquier
    parte: te pregunta si crear una tarea nueva con ese mail o sumarlo a una existente.
-2. **Botón “🐟 Mail → Mis tareas”.** En la app, botón **Outlook** → arrastrá el botón a la barra de favoritos. Con un
+2. **Botón “🐟 Mail → Mis tareas”.** Desde el detalle de una tarea, “¿Cómo copio el link de un mail de Outlook?” → arrastrá el botón a la barra de favoritos. Con un
    mail abierto en Outlook web, un clic y se abre la app con el mail listo para vincular. Si antes seleccionás el
    asunto, lo usa como nombre.
 3. **Outlook de escritorio.** Abrí el mismo mail en Outlook web y seguí el paso 1, o guardá solo el asunto (escribilo
@@ -52,6 +52,17 @@ Los links funcionan con tu cuenta: si se los pasás a otra persona, no va a ver 
 - Menú **⋯ → Descargar copia de seguridad** baja un `.json` con todo. **Restaurar una copia…** lo vuelve a cargar.
   Conviene hacer una copia de vez en cuando (o antes de cambiar de compu o de navegador).
 - Desde la bitácora: **Exportar a Excel (CSV)**.
+
+## Usarla (vos y cualquier otra persona)
+
+La app está publicada en **https://roguevarac.github.io/gestor_tareas/**. No hace falta instalar Node ni abrir PowerShell.
+
+1. Abrir ese link en **Chrome o Edge**.
+2. Menú **⋯ → Instalar en esta computadora** (o el ícono de instalar en la barra de direcciones).
+3. Queda con su ícono en el menú Inicio y en el escritorio. Para fijarla en la barra de tareas: clic derecho en el
+   ícono de la app abierta → **Anclar a la barra de tareas**.
+
+Cada persona tiene sus propias tareas, guardadas en su navegador: nadie ve las tareas de otro.
 
 ## Instalarla como app
 

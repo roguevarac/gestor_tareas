@@ -2,7 +2,7 @@ name: Publicar Mis tareas
 
 on:
   push:
-    branches: [main]
+    branches: [main, claude/upbeat-euler-qkm78t]
   pull_request:
   workflow_dispatch:
 
