@@ -2,8 +2,9 @@ import { useEffect, useRef, useState } from 'react';
 import { AnimatePresence, motion } from 'motion/react';
 import { useTasks } from '../store/tasks';
 import { useUI } from '../store/ui';
+import { taskOps } from '../lib/taskOps';
 import { formatMinutes, parseDuration } from '../lib/time';
-import { Fish } from './Fish';
+import { SpeciesFish } from './Fishes';
 import { IconUndo, IconX } from './Icons';
 
 const QUICK = [15, 30, 45, 60, 90, 120, 180];
@@ -24,7 +25,6 @@ export function CatchCard() {
 function CatchCardBody({ entryId, onClose }: { entryId: string; onClose(): void }) {
   const entry = useTasks((s) => s.log.find((e) => e.id === entryId));
   const updateLog = useTasks((s) => s.updateLog);
-  const restore = useTasks((s) => s.restoreFromLog);
   const toast = useUI((s) => s.toast);
   const [text, setText] = useState(() => (entry?.minutes ? formatMinutes(entry.minutes) : ''));
   const inputRef = useRef<HTMLInputElement>(null);
@@ -67,7 +67,7 @@ function CatchCardBody({ entryId, onClose }: { entryId: string; onClose(): void 
         <IconX size={16} />
       </button>
       <div className="catch-head">
-        <Fish width={72} className="catch-fish" />
+        <SpeciesFish kind={entry.task.shared?.fish} width={72} className="catch-fish" />
         <div>
           <p className="catch-kicker">¡Al balde!</p>
           <p className="catch-title">{entry.task.title}</p>
@@ -129,7 +129,7 @@ function CatchCardBody({ entryId, onClose }: { entryId: string; onClose(): void 
             type="button"
             className="btn btn-ghost"
             onClick={() => {
-              restore(entry.id);
+              taskOps.restore(entry.id);
               onClose();
               toast('La tarea volvió al agua');
             }}

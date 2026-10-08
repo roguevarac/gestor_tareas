@@ -2,12 +2,15 @@ import { motion } from 'motion/react';
 import type { Task } from '../types';
 import { useFishDrag } from '../hooks/useFishDrag';
 import { usePond } from '../store/pond';
-import { useTasks } from '../store/tasks';
 import { useUI } from '../store/ui';
 import { toneStyle } from '../lib/tones';
 import { mailTitle } from '../lib/mail';
 import { SubtaskList } from './SubtaskList';
 import { IconChevron, IconMail, IconNote } from './Icons';
+import { taskOps } from '../lib/taskOps';
+import { firstName } from '../sharing/logic';
+import { SpeciesFish, speciesName } from './Fishes';
+import { Avatar } from './Avatar';
 
 const cardMotion = (swimming: boolean) => ({
   layout: true,
@@ -68,6 +71,33 @@ function CardBadges({ task }: { task: Task }) {
   );
 }
 
+/** Tarjeta compartida: con qué pez llegó y con quién se comparte. */
+function SharedStrip({ task }: { task: Task }) {
+  const sh = task.shared;
+  if (!sh) return null;
+  const others = sh.members.filter((m) => m.uid !== sh.me);
+  return (
+    <div className="card-shared">
+      <span className="card-shared-fish" title={speciesName(sh.fish)}>
+        <SpeciesFish kind={sh.fish} width={34} swim={false} />
+      </span>
+      {sh.mode === 'joint' ? (
+        <>
+          <span className="card-shared-label">Conjunto</span>
+          <span className="avatar-stack">
+            {others.slice(0, 4).map((m) => (
+              <Avatar key={m.uid} uid={m.uid} name={m.name} size={20} />
+            ))}
+            {others.length > 4 && <span className="avatar-more">+{others.length - 4}</span>}
+          </span>
+        </>
+      ) : (
+        <span className="card-shared-label">De {firstName(sh.fromName)}</span>
+      )}
+    </div>
+  );
+}
+
 function useCardProps(task: Task) {
   const drag = useFishDrag<HTMLElement>(task);
   const swimming = usePond((s) => s.draggingId === task.id);
@@ -96,20 +126,20 @@ export function QuickCard({ task }: { task: Task }) {
     <motion.article
       {...cardMotion(swimming)}
       {...props}
-      className={`card card--quick ${swimming ? 'is-swimming' : ''}`}
+      className={`card card--quick ${swimming ? 'is-swimming' : ''} ${task.shared ? 'is-shared' : ''}`}
       aria-label={`Tarea: ${task.title}`}
     >
       <div className="card-head">
         <h3 className="card-title">{task.title}</h3>
         <CardBadges task={task} />
       </div>
+      <SharedStrip task={task} />
     </motion.article>
   );
 }
 
 export function ProjectCard({ task }: { task: Task }) {
   const { swimming, props } = useCardProps(task);
-  const updateTask = useTasks((s) => s.updateTask);
   const total = task.subtasks.length;
   const done = task.subtasks.filter((s) => s.done).length;
   const pct = total ? Math.round((done / total) * 100) : 0;
@@ -119,7 +149,7 @@ export function ProjectCard({ task }: { task: Task }) {
     <motion.article
       {...cardMotion(swimming)}
       {...props}
-      className={`card card--project ${swimming ? 'is-swimming' : ''} ${allDone ? 'is-complete' : ''}`}
+      className={`card card--project ${swimming ? 'is-swimming' : ''} ${allDone ? 'is-complete' : ''} ${task.shared ? 'is-shared' : ''}`}
       aria-label={`Proyecto: ${task.title}`}
     >
       <div className="card-head">
@@ -133,7 +163,7 @@ export function ProjectCard({ task }: { task: Task }) {
           className={`collapse-btn ${task.collapsed ? 'is-collapsed' : ''}`}
           onClick={(e) => {
             e.stopPropagation();
-            updateTask(task.id, { collapsed: !task.collapsed });
+            taskOps.update(task, { collapsed: !task.collapsed });
           }}
           aria-expanded={!task.collapsed}
           aria-label={task.collapsed ? 'Mostrar subtareas' : 'Ocultar subtareas'}
@@ -142,6 +172,7 @@ export function ProjectCard({ task }: { task: Task }) {
           <IconChevron size={16} />
         </button>
       </div>
+      <SharedStrip task={task} />
       <div className="progress" aria-hidden="true">
         <motion.div className="progress-fill" initial={false} animate={{ width: `${pct}%` }} />
       </div>

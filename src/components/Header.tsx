@@ -6,7 +6,9 @@ import { dayKey, formatMinutes, startOfDay, todayLong } from '../lib/time';
 import { downloadFile, makeBackup, parseBackup } from '../lib/backup';
 import { Fish, MiniFish } from './Fish';
 import { Modal } from './Modal';
-import { IconBook, IconDots, IconDownload, IconUpload } from './Icons';
+import { IconBook, IconDots, IconDownload, IconUpload, IconUsers } from './Icons';
+import { useIncoming, useShared } from '../store/shared';
+import { SpeciesFish } from './Fishes';
 import { useInstallPrompt } from '../hooks/useInstallPrompt';
 
 export function Header() {
@@ -36,9 +38,35 @@ export function Header() {
         <button type="button" className="top-btn" onClick={() => setLogOpen(true)}>
           <IconBook size={17} /> <span className="hide-sm">Bitácora</span>
         </button>
+        <ShareButton />
         <MoreMenu />
       </div>
     </header>
+  );
+}
+
+/** "Compartir" (sin cuenta) o "Pecera" con los peces que me esperan. */
+function ShareButton() {
+  const status = useShared((s) => s.status);
+  const waiting = useIncoming().length;
+  if (status === 'off' || status === 'loading') return null;
+  if (status === 'signedOut')
+    return (
+      <button type="button" className="top-btn" onClick={() => useShared.setState({ authOpen: true })} title="Compartir tareas con otras personas">
+        <IconUsers size={18} /> <span className="hide-sm">Compartir</span>
+      </button>
+    );
+  return (
+    <button
+      type="button"
+      className={`top-btn pecera-btn ${waiting ? 'has-fish' : ''}`}
+      onClick={() => useShared.setState({ peceraOpen: true })}
+      title={waiting ? `${waiting} ${waiting === 1 ? 'pez esperando' : 'peces esperando'}` : 'Pecera: tareas compartidas'}
+    >
+      <SpeciesFish kind="payaso" width={34} swim={waiting > 0} />
+      <span className="hide-sm">Pecera</span>
+      {waiting > 0 && <span className="top-badge">{waiting}</span>}
+    </button>
   );
 }
 

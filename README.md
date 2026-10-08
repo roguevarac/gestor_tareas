@@ -29,6 +29,35 @@ Todo queda guardado **en tu navegador** (no hay servidor ni cuentas): tus tareas
 El tiempo se puede escribir como `45`, `45 min`, `1h`, `1h 30`, `1:30`, `1,5 hs`, o como horario: `de 9 a 10:30`,
 `9:15-11`.
 
+## Compartir tareas: la pecera
+
+Con **Compartir** (arriba) cada persona entra con su cuenta de Google o con mail y contraseña. Desde ahí:
+
+- **Mandar un pez**: elegís la tarea (nueva, o una tuya desde su detalle → *Mandar a alguien*), a quién, el pez
+  (mojarrita = algo rápido, dorado = importante, surubí = algo grande, pez payaso = un favorcito, pez globo = ¡urgente!)
+  y unas palabras si querés.
+  - **Que la haga**: la tarea pasa a ser solo de la otra persona. Si se la mandás a varias, le llega una a cada una.
+    Cuando la tira al balde, te llega el aviso.
+  - **La hacemos juntos**: proyecto conjunto que ven todos. Cada subtarea tiene su responsable (el circulito con las
+    iniciales; tocándolo se cambia) y cualquiera puede tildar. Cuando alguien lo tira al balde, se termina para todos.
+- **Recibir**: el pez llega nadando con la tarea. *Aceptar* la pone en tu lista, *No la tomo* le avisa a quien la
+  mandó (y la puede recuperar), *Después* la deja esperando en la pecera.
+- **Pecera**: lo que te mandaron y todavía no respondiste, y todo lo que mandaste con su estado.
+
+Tus tareas personales siguen guardadas solo en tu navegador. Las compartidas se guardan en Firebase (de Google) y
+solo las ven quienes participan. Modo de prueba sin Firebase: abrir la app con `?demo=ana` en una pestaña y
+`?demo=juan` en otra.
+
+### Configurar Firebase (una sola vez)
+
+1. [console.firebase.google.com](https://console.firebase.google.com) → crear un proyecto (sin Analytics).
+2. **Authentication** → Comenzar → habilitar **Google** y **Correo electrónico/contraseña**. En *Configuración →
+   Dominios autorizados* agregar el dominio donde está publicada la app (`roguevarac.github.io`).
+3. **Firestore Database** → Crear base de datos (modo producción). En **Reglas**, pegar el contenido de
+   [`firestore.rules`](firestore.rules) y **Publicar**.
+4. ⚙️ Configuración del proyecto → Tus apps → **Web** → registrar y copiar el `firebaseConfig` en
+   [`src/sharing/config.ts`](src/sharing/config.ts). Mientras ahí diga `null`, la parte de compartir no aparece.
+
 ## Vincular mails de Outlook
 
 Outlook no tiene un botón de “copiar link de este mail” (ni en el Outlook nuevo ni en el clásico), así que la app
@@ -105,6 +134,14 @@ Source: GitHub Actions**. En repos privados, GitHub Pages necesita un plan pago 
 `dist/` se puede subir a cualquier hosting estático (Netlify, Cloudflare Pages, un servidor interno…).
 
 ## Cambios
+
+### 1.2
+
+- **Compartir tareas**: mandar peces (tareas) a otras personas, aceptarlas o rechazarlas, y proyectos conjuntos con
+  responsable por subtarea. Cinco peces para elegir.
+- Ícono nuevo, con la mojarrita bien visible en la barra de tareas y el escritorio.
+- Sin botón de Outlook arriba (la vinculación de mails sigue en el detalle de cada tarea).
+- Menú ⋯ → *Instalar en esta computadora*.
 
 ### 1.1
 

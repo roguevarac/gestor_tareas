@@ -3,11 +3,13 @@ import { AnimatePresence, motion } from 'motion/react';
 import type { LogEntry } from '../types';
 import { useTasks } from '../store/tasks';
 import { useUI } from '../store/ui';
+import { taskOps } from '../lib/taskOps';
 import { dayKey, dayLabel, formatMinutes, formatTime, parseDuration, startOfDay, startOfWeek } from '../lib/time';
 import { downloadFile, logToCsv } from '../lib/backup';
 import { tone } from '../lib/tones';
 import { Modal } from './Modal';
 import { MiniFish } from './Fish';
+import { SpeciesFish } from './Fishes';
 import { MailChips } from './MailLinks';
 import { EditableText } from './EditableText';
 import { IconClock, IconDownload, IconSearch, IconTrash, IconUndo } from './Icons';
@@ -140,7 +142,6 @@ function Stat({ label, count, minutes }: { label: string; count: number; minutes
 
 function LogRow({ entry }: { entry: LogEntry }) {
   const updateLog = useTasks((s) => s.updateLog);
-  const restore = useTasks((s) => s.restoreFromLog);
   const remove = useTasks((s) => s.deleteLog);
   const toast = useUI((s) => s.toast);
   const [confirm, setConfirm] = useState(false);
@@ -160,12 +161,19 @@ function LogRow({ entry }: { entry: LogEntry }) {
         className="log-fish"
         style={{ background: `linear-gradient(140deg, ${tone(t.tone).from}, ${tone(t.tone).to})` }}
       >
-        <MiniFish size={30} />
+        {t.shared ? <SpeciesFish kind={t.shared.fish} width={34} swim={false} /> : <MiniFish size={30} />}
       </span>
       <div className="log-main">
         <p className="log-entry-title">{t.title}</p>
         <p className="log-meta">
-          {t.kind === 'project' ? 'Proyecto' : 'Rápida'} · {formatTime(entry.completedAt)}
+          {t.shared?.mode === 'joint'
+            ? 'Proyecto conjunto'
+            : t.shared
+              ? `De ${t.shared.fromName}`
+              : t.kind === 'project'
+                ? 'Proyecto'
+                : 'Rápida'}{' '}
+          · {formatTime(entry.completedAt)}
           {t.subtasks.length > 0 && ` · ${subsDone}/${t.subtasks.length} subtareas`}
         </p>
 
@@ -221,7 +229,7 @@ function LogRow({ entry }: { entry: LogEntry }) {
                 type="button"
                 className="btn btn-sm btn-ghost"
                 onClick={() => {
-                  restore(entry.id);
+                  taskOps.restore(entry.id);
                   toast('La tarea volvió al agua');
                 }}
                 title="Volver a poner la tarea en la lista"

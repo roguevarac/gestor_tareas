@@ -2,6 +2,7 @@ import { useRef, useState } from 'react';
 import { AnimatePresence } from 'motion/react';
 import type { TaskKind } from '../types';
 import { useTasks } from '../store/tasks';
+import { useAllTasks } from '../store/allTasks';
 import { useUI } from '../store/ui';
 import { ProjectCard, QuickCard } from './TaskCards';
 import { MiniFish } from './Fish';
@@ -24,7 +25,7 @@ const COPY: Record<TaskKind, { title: string; placeholder: string; empty: string
 
 export function Pond({ kind }: { kind: TaskKind }) {
   const copy = COPY[kind];
-  const allTasks = useTasks((s) => s.tasks);
+  const allTasks = useAllTasks();
   const tasks = allTasks.filter((t) => t.kind === kind);
   const addTask = useTasks((s) => s.addTask);
   const setFocusSubtasksOf = useUI((s) => s.setFocusSubtasksOf);

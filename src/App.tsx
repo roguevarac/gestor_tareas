@@ -11,9 +11,15 @@ import { LogPanel } from './components/LogPanel';
 import { HelpOutlook } from './components/HelpOutlook';
 import { IncomingMail, useIncomingMail } from './components/IncomingMail';
 import { Toasts } from './components/Toasts';
+import { startSharing } from './store/shared';
+import { AuthModal } from './components/AuthModal';
+import { LaunchedFish, SendFishDialog } from './components/SendFishDialog';
+import { IncomingFish } from './components/IncomingFish';
+import { Pecera } from './components/Pecera';
 
 export default function App() {
   useEffect(() => syncAcrossTabs(), []);
+  useEffect(() => void startSharing(), []);
   useIncomingMail();
 
   return (
@@ -33,6 +39,11 @@ export default function App() {
       <LogPanel />
       <HelpOutlook />
       <IncomingMail />
+      <AuthModal />
+      <SendFishDialog />
+      <Pecera />
+      <IncomingFish />
+      <LaunchedFish />
       <Toasts />
     </>
   );

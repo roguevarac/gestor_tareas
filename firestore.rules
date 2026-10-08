@@ -1,0 +1,61 @@
+rules_version = '2';
+
+// Reglas de Mis tareas. Copiar todo esto en Firebase → Firestore Database → Reglas → Publicar.
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function signedIn() { return request.auth != null; }
+
+    // Perfiles: cualquiera que entró ve los nombres (para elegir a quién mandarle un pez);
+    // cada uno solo cambia el suyo.
+    match /users/{uid} {
+      allow read: if signedIn();
+      allow create, update: if signedIn() && request.auth.uid == uid
+        && request.resource.data.keys().hasOnly(['name', 'email', 'photoURL', 'updatedAt'])
+        && request.resource.data.name is string
+        && request.resource.data.name.size() > 0
+        && request.resource.data.name.size() <= 80;
+      allow delete: if false;
+    }
+
+    // Tareas compartidas: solo las ven quienes participan.
+    match /shared/{id} {
+      function me() { return request.auth.uid; }
+      function cur() { return resource.data; }
+      function nxt() { return request.resource.data; }
+      function changed() { return nxt().diff(cur()).affectedKeys(); }
+
+      allow read: if signedIn() && me() in cur().participants;
+
+      allow create: if signedIn()
+        && nxt().from == me()
+        && nxt().participants is list
+        && nxt().participants.size() >= 2
+        && nxt().participants.size() <= 25
+        && me() in nxt().participants
+        && nxt().invites[me()] == 'owner'
+        && nxt().mode in ['assigned', 'joint']
+        && nxt().state == 'open'
+        && nxt().title is string
+        && nxt().title.size() <= 500;
+
+      // Quien la mandó puede cambiar todo, menos de quién es y quiénes participan.
+      allow update: if signedIn() && cur().from == me()
+        && nxt().from == cur().from
+        && nxt().participants == cur().participants
+        && nxt().invites[me()] == 'owner';
+
+      // Los demás: responden (aceptar / rechazar / salir) y, si aceptaron, trabajan en la tarea.
+      allow update: if signedIn() && cur().from != me()
+        && me() in cur().participants
+        && !changed().hasAny(['from', 'participants', 'names', 'mode', 'fish', 'message', 'createdAt'])
+        && nxt().invites.diff(cur().invites).affectedKeys().hasOnly([me()])
+        && nxt().invites[me()] in ['pending', 'accepted', 'declined', 'left']
+        && (
+          changed().hasOnly(['invites', 'updatedAt'])
+          || (cur().invites[me()] == 'accepted' && nxt().invites[me()] == 'accepted')
+        );
+
+      allow delete: if signedIn() && cur().from == me();
+    }
+  }
+}

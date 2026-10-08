@@ -5,8 +5,11 @@ import { uid } from '../lib/id';
 import { TONES } from '../lib/tones';
 import { cleanupV1 } from '../lib/migrate';
 
+import { demoHandle } from '../sharing/mode';
+
 /** Nombre interno de cuando la app se llamaba "Mojarrita": se mantiene para no perder lo guardado. */
-export const STORAGE_KEY = 'mojarrita:v1';
+const demo = demoHandle();
+export const STORAGE_KEY = demo ? `mojarrita:v1:demo:${demo}` : 'mojarrita:v1';
 
 type PersistedState = Pick<TasksState, 'tasks' | 'log' | 'toneCursor'>;
 
@@ -35,6 +38,8 @@ export interface TasksState {
 
   /** Saca la tarea del agua y la guarda en la bitácora. Devuelve el id de la entrada. */
   completeTask(id: string): string | null;
+  /** Tarea compartida terminada: entra a la bitácora (la tarea en sí vive en el servidor). */
+  logShared(task: Task, opts?: { completedAt?: number; comment?: string }): string;
   updateLog(id: string, patch: Partial<Pick<LogEntry, 'minutes' | 'comment'>>): void;
   /** "Devolver al agua": la tarea vuelve a la lista. */
   restoreFromLog(id: string): void;
@@ -145,6 +150,20 @@ export const useTasks = create<TasksState>()(
           comment: '',
         };
         set((s) => ({ tasks: s.tasks.filter((t) => t.id !== id), log: [entry, ...s.log] }));
+        return entry.id;
+      },
+
+      logShared(task, opts) {
+        const { collapsed: _c, ...rest } = task;
+        void _c;
+        const entry: LogEntry = {
+          id: uid(),
+          task: rest,
+          completedAt: opts?.completedAt ?? Date.now(),
+          minutes: null,
+          comment: opts?.comment ?? '',
+        };
+        set((s) => ({ log: [entry, ...s.log] }));
         return entry.id;
       },
 

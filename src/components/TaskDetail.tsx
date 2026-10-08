@@ -1,27 +1,33 @@
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
-import { useTasks } from '../store/tasks';
+import type { Task } from '../types';
 import { useUI } from '../store/ui';
+import { useTaskById } from '../store/allTasks';
+import { useShared } from '../store/shared';
+import { taskOps } from '../lib/taskOps';
+import { firstName } from '../sharing/logic';
+import { SpeciesFish, speciesWithArticle } from './Fishes';
+import { Avatar } from './Avatar';
 import { TONES } from '../lib/tones';
 import { formatTime, todayLong } from '../lib/time';
 import { Modal } from './Modal';
 import { SubtaskList } from './SubtaskList';
 import { MailAddForm, MailChips } from './MailLinks';
-import { IconTrash } from './Icons';
+import { IconSend, IconTrash } from './Icons';
 
 /** Detalle de una tarea: nombre, tipo, color, notas, mails y subtareas. Todo se guarda solo. */
 export function TaskDetail() {
   const openTaskId = useUI((s) => s.openTaskId);
   const openTask = useUI((s) => s.openTask);
   const toast = useUI((s) => s.toast);
-  const current = useTasks((s) => s.tasks.find((t) => t.id === openTaskId));
+  const current = useTaskById(openTaskId);
+  const sharingStatus = useShared((s) => s.status);
   // Mientras el diálogo se cierra seguimos mostrando la última tarea (si no, se vacía de golpe).
   const lastTask = useRef(current);
   if (current) lastTask.current = current;
   const task = current ?? lastTask.current;
-  const updateTask = useTasks((s) => s.updateTask);
-  const deleteTask = useTasks((s) => s.deleteTask);
-  const addMail = useTasks((s) => s.addMail);
-  const removeMail = useTasks((s) => s.removeMail);
+  const updateTask = (id: string, patch: Partial<Task>) => task && task.id === id && taskOps.update(task, patch);
+  const shared = task?.shared;
+  const leaving = !!shared && !shared.isOwner;
   const [title, setTitle] = useState('');
   const [confirmDelete, setConfirmDelete] = useState(false);
 
@@ -48,23 +54,31 @@ export function TaskDetail() {
         close();
       }}
       size="lg"
-      title={task?.kind === 'project' ? 'Proyecto' : 'Tarea rápida'}
+      title={
+        shared?.mode === 'joint' ? 'Proyecto conjunto' : task?.kind === 'project' ? 'Proyecto' : 'Tarea rápida'
+      }
       footer={
         task && (
           <>
             {confirmDelete ? (
               <div className="confirm">
-                <span>¿Borrar sin pasar por el balde?</span>
+                <span>
+                  {leaving
+                    ? '¿Salir? Deja de estar en tu lista.'
+                    : shared
+                      ? '¿Borrarla para todos?'
+                      : '¿Borrar sin pasar por el balde?'}
+                </span>
                 <button
                   type="button"
                   className="btn btn-danger"
                   onClick={() => {
-                    deleteTask(task.id);
+                    taskOps.remove(task);
                     close();
-                    toast('Tarea borrada');
+                    toast(leaving ? 'Saliste de la tarea' : 'Tarea borrada');
                   }}
                 >
-                  Sí, borrar
+                  {leaving ? 'Sí, salir' : 'Sí, borrar'}
                 </button>
                 <button type="button" className="btn btn-ghost" onClick={() => setConfirmDelete(false)}>
                   No
@@ -72,10 +86,24 @@ export function TaskDetail() {
               </div>
             ) : (
               <button type="button" className="btn btn-ghost btn-danger-text" onClick={() => setConfirmDelete(true)}>
-                <IconTrash size={16} /> Borrar
+                <IconTrash size={16} /> {leaving ? 'Salir' : 'Borrar'}
               </button>
             )}
             <span className="spacer" />
+            {!shared && sharingStatus !== 'off' && !confirmDelete && (
+              <button
+                type="button"
+                className="btn btn-secondary"
+                onClick={() => {
+                  commitTitle();
+                  close();
+                  if (sharingStatus === 'ready') useShared.setState({ sendDialog: { task } });
+                  else useShared.setState({ authOpen: true });
+                }}
+              >
+                <IconSend size={16} /> <span className="hide-sm">Mandar a alguien</span>
+              </button>
+            )}
             <button
               type="button"
               className="btn btn-primary"
@@ -97,7 +125,10 @@ export function TaskDetail() {
             Creada el {todayLong(task.createdAt).toLowerCase()}, {formatTime(task.createdAt)} h
           </p>
 
+          {shared && <SharedInfoBox task={task} />}
+
           <div className="detail-row">
+            {shared?.mode !== 'joint' && (
             <div className="segmented" role="radiogroup" aria-label="Tipo">
               <button
                 type="button"
@@ -118,6 +149,7 @@ export function TaskDetail() {
                 Proyecto
               </button>
             </div>
+            )}
             <div className="swatches" role="radiogroup" aria-label="Color">
               {TONES.map((t, i) => (
                 <button
@@ -144,19 +176,13 @@ export function TaskDetail() {
 
           <section className="detail-section">
             <h3>Mails vinculados</h3>
-            <MailChips mails={task.mails} onRemove={(id) => removeMail(task.id, id)} />
-            <MailAddForm onAdd={(m) => addMail(task.id, m)} />
+            <MailChips mails={task.mails} onRemove={(id) => taskOps.removeMail(task, id)} />
+            <MailAddForm onAdd={(m) => taskOps.addMail(task, m)} />
           </section>
 
           <section className="detail-section">
             <h3>Notas</h3>
-            <textarea
-              className="input textarea"
-              value={task.notes}
-              onChange={(e) => updateTask(task.id, { notes: e.target.value })}
-              placeholder="Detalles del pedido, parámetros, a quién avisar…"
-              rows={4}
-            />
+            <NotesField key={task.id} task={task} />
           </section>
         </div>
       )}
@@ -189,5 +215,79 @@ function AutoTitle({ value, onChange, onCommit }: { value: string; onChange(v: s
       }}
       aria-label="Nombre de la tarea"
     />
+  );
+}
+
+/** Notas: se guardan solas (en las compartidas, al dejar de escribir un momento). */
+function NotesField({ task }: { task: Task }) {
+  const [value, setValue] = useState(task.notes);
+  const focused = useRef(false);
+  const timer = useRef<number | undefined>(undefined);
+  const latest = useRef(task);
+  latest.current = task;
+
+  useEffect(() => {
+    if (!focused.current) setValue(task.notes);
+  }, [task.notes]);
+
+  const save = (v: string) => {
+    window.clearTimeout(timer.current);
+    if (v !== latest.current.notes) taskOps.update(latest.current, { notes: v });
+  };
+  useEffect(() => () => window.clearTimeout(timer.current), []);
+
+  return (
+    <textarea
+      className="input textarea"
+      value={value}
+      onFocus={() => (focused.current = true)}
+      onBlur={() => {
+        focused.current = false;
+        save(value);
+      }}
+      onChange={(e) => {
+        const v = e.target.value;
+        setValue(v);
+        window.clearTimeout(timer.current);
+        if (task.shared) timer.current = window.setTimeout(() => save(v), 700);
+        else save(v);
+      }}
+      placeholder="Detalles del pedido, parámetros, a quién avisar…"
+      rows={4}
+    />
+  );
+}
+
+function SharedInfoBox({ task }: { task: Task }) {
+  const sh = task.shared!;
+  const others = sh.people.filter((p) => p.uid !== sh.me);
+  return (
+    <div className="shared-box">
+      <SpeciesFish kind={sh.fish} width={74} />
+      <div>
+        {sh.mode === 'joint' ? (
+          <>
+            <p className="shared-box-title">
+              {sh.isOwner ? 'Proyecto conjunto que armaste' : `Proyecto conjunto de ${firstName(sh.fromName)}`}
+            </p>
+            <div className="shared-people">
+              {others.map((p) => (
+                <span key={p.uid} className={`person ${p.pending ? 'is-pending' : ''}`}>
+                  <Avatar uid={p.uid} name={p.name} size={22} />
+                  {firstName(p.name)}
+                  {p.pending && <small> · no respondió</small>}
+                </span>
+              ))}
+            </div>
+            <p className="shared-box-hint">Tocá el circulito de cada subtarea para elegir quién se encarga.</p>
+          </>
+        ) : (
+          <p className="shared-box-title">
+            {firstName(sh.fromName)} te la mandó con {speciesWithArticle(sh.fish)}. Cuando la termines, tirala al
+            balde y le avisa.
+          </p>
+        )}
+      </div>
+    </div>
   );
 }

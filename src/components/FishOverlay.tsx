@@ -1,9 +1,10 @@
 import { useEffect, useRef, useState } from 'react';
 import { animate, motion, useMotionValue, useTransform } from 'motion/react';
 import type { Task } from '../types';
-import { Fish, FISH_RATIO } from './Fish';
+import { FISH_RATIO } from './Fish';
+import { SpeciesFish } from './Fishes';
 import { bucketMouth, bucketRect, isOverBucket, registerPondController, usePond } from '../store/pond';
-import { useTasks } from '../store/tasks';
+import { taskOps } from '../lib/taskOps';
 import { useUI } from '../store/ui';
 import { toneStyle } from '../lib/tones';
 
@@ -121,7 +122,7 @@ export function FishOverlay() {
         opacity.jump(0);
       }
       usePond.setState((s) => ({ splashKey: s.splashKey + 1 }));
-      const entryId = useTasks.getState().completeTask(task.id);
+      const entryId = taskOps.complete(task);
       finish();
       if (entryId) window.setTimeout(() => useUI.getState().showCatch(entryId), 380);
     };
@@ -273,7 +274,7 @@ export function FishOverlay() {
         >
           <motion.div className="fish-runner" style={{ x: left, y: top, rotate: rot, scale, opacity }}>
             <motion.div className="fish-flip" animate={{ scaleX: facing }} transition={spring(520, 30)}>
-              <Fish width={FISH_W} />
+              <SpeciesFish kind={run.task.shared?.fish} width={FISH_W} />
             </motion.div>
           </motion.div>
         </div>
