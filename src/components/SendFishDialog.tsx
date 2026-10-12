@@ -22,7 +22,8 @@ interface DraftSub {
 let keySeq = 0;
 const nextKey = () => `s${++keySeq}`;
 
-export const APP_URL = 'https://roguevarac.github.io/gestor_tareas/';
+/** Link para pasarle a la gente: abre la app y ofrece instalarla. */
+export const APP_URL = 'https://roguevarac.github.io/gestor_tareas/?instalar';
 
 /** Elegir qué mandar, a quién, cómo (para que la haga / conjunta) y en qué pez. */
 export function SendFishDialog() {

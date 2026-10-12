@@ -16,6 +16,7 @@ import { TeamModal } from './components/TeamModal';
 import { LaunchedFish, SendFishDialog } from './components/SendFishDialog';
 import { IncomingFish } from './components/IncomingFish';
 import { Pecera } from './components/Pecera';
+import { InstallBanner } from './components/InstallBanner';
 
 export default function App() {
   useEffect(() => syncAcrossTabs(), []);
@@ -27,6 +28,7 @@ export default function App() {
       <Ocean />
       <div className="app">
         <Header />
+        <InstallBanner />
         <main className="ponds">
           <Pond kind="quick" />
           <Pond kind="project" />

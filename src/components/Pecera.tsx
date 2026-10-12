@@ -135,7 +135,7 @@ export function Pecera() {
       )}
 
       <section className="pecera-section pecera-invite">
-        <p className="muted small">Link de la app, para pasarle a quien esté en el equipo:</p>
+        <p className="muted small">Link para pasarle a la gente del equipo (abre la app y les ofrece instalarla):</p>
         <button
           type="button"
           className="btn btn-secondary btn-sm"

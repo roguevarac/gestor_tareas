@@ -139,6 +139,11 @@ Source: GitHub Actions**. En repos privados, GitHub Pages necesita un plan pago 
 
 ## Cambios
 
+### 1.4
+
+- Ícono nuevo: la mojarrita azul, sola, sin fondo.
+- El link para pasarle a la gente (`…/gestor_tareas/?instalar`) abre la app y ofrece instalarla.
+
 ### 1.3
 
 - Compartir en modo equipo: sin cuentas. Quien administra carga a la gente y cada uno elige su nombre.
