@@ -1,36 +1,89 @@
 rules_version = '2';
 
-// Reglas de Mis tareas. Copiar todo esto en Firebase → Firestore Database → Reglas → Publicar.
+// Reglas de Mis tareas (modo equipo, sin cuentas).
+// Cada navegador entra como "anónimo" y elige quién es de la lista del equipo.
+// Solo quien administra (con su clave) puede sumar o sacar gente.
+// Publicar con: firebase deploy --only firestore:rules
 service cloud.firestore {
   match /databases/{database}/documents {
     function signedIn() { return request.auth != null; }
-
-    // Perfiles: cualquiera que entró ve los nombres (para elegir a quién mandarle un pez);
-    // cada uno solo cambia el suyo.
-    match /users/{uid} {
-      allow read: if signedIn();
-      allow create, update: if signedIn() && request.auth.uid == uid
-        && request.resource.data.keys().hasOnly(['name', 'email', 'photoURL', 'updatedAt'])
-        && request.resource.data.name is string
-        && request.resource.data.name.size() > 0
-        && request.resource.data.name.size() <= 80;
-      allow delete: if false;
+    function claimPath() { return /databases/$(database)/documents/claims/$(request.auth.uid); }
+    // Persona del equipo que eligió este navegador.
+    function me() { return get(claimPath()).data.memberId; }
+    function isMember() {
+      return signedIn() && exists(claimPath())
+        && exists(/databases/$(database)/documents/members/$(me()));
+    }
+    function isAdmin() { return signedIn() && exists(/databases/$(database)/documents/admins/$(request.auth.uid)); }
+    function isAdminAfter() {
+      return signedIn() && existsAfter(/databases/$(database)/documents/admins/$(request.auth.uid));
     }
 
-    // Tareas compartidas: solo las ven quienes participan.
+    // "Ya hay equipo": lo puede leer cualquiera; se crea una sola vez, al armarlo.
+    match /config/public {
+      allow get: if signedIn();
+      allow create: if isAdminAfter()
+        && !exists(/databases/$(database)/documents/config/public);
+    }
+
+    // La clave para administrar: nadie la puede leer.
+    match /config/secrets {
+      allow create: if signedIn()
+        && !exists(/databases/$(database)/documents/config/public)
+        && request.resource.data.keys().hasOnly(['adminCode'])
+        && request.resource.data.adminCode is string
+        && request.resource.data.adminCode.size() >= 6;
+      allow update: if isAdmin()
+        && request.resource.data.keys().hasOnly(['adminCode'])
+        && request.resource.data.adminCode is string
+        && request.resource.data.adminCode.size() >= 6;
+    }
+
+    // Navegadores que administran (entraron con la clave).
+    match /admins/{uid} {
+      allow get: if signedIn() && request.auth.uid == uid;
+      allow create: if signedIn() && request.auth.uid == uid
+        && request.resource.data.keys().hasOnly(['code'])
+        && request.resource.data.code == getAfter(/databases/$(database)/documents/config/secrets).data.adminCode;
+      allow delete: if signedIn() && request.auth.uid == uid;
+    }
+
+    // El equipo: lo ve cualquiera que abre la app (para elegir quién es); lo cambia quien administra.
+    match /members/{id} {
+      allow read: if signedIn();
+      allow create, update: if isAdminAfter()
+        && request.resource.data.keys().hasOnly(['name', 'email', 'createdAt'])
+        && request.resource.data.name is string
+        && request.resource.data.name.size() > 0
+        && request.resource.data.name.size() <= 80
+        && request.resource.data.email is string
+        && request.resource.data.email.size() <= 120;
+      allow delete: if isAdmin();
+    }
+
+    // Quién es cada navegador.
+    match /claims/{uid} {
+      allow get: if signedIn() && request.auth.uid == uid;
+      allow create, update: if signedIn() && request.auth.uid == uid
+        && request.resource.data.keys().hasOnly(['memberId', 'at'])
+        && request.resource.data.memberId is string
+        && existsAfter(/databases/$(database)/documents/members/$(request.resource.data.memberId));
+      allow delete: if signedIn() && request.auth.uid == uid;
+    }
+
+    // Tareas compartidas.
     match /shared/{id} {
-      function me() { return request.auth.uid; }
       function cur() { return resource.data; }
       function nxt() { return request.resource.data; }
       function changed() { return nxt().diff(cur()).affectedKeys(); }
 
-      allow read: if signedIn() && me() in cur().participants;
+      allow read: if isMember();
 
-      allow create: if signedIn()
+      allow create: if isMember()
         && nxt().from == me()
         && nxt().participants is list
         && nxt().participants.size() >= 2
-        && nxt().participants.size() <= 25
+        && nxt().participants.size() <= 50
         && me() in nxt().participants
         && nxt().invites[me()] == 'owner'
         && nxt().mode in ['assigned', 'joint']
@@ -39,13 +92,13 @@ service cloud.firestore {
         && nxt().title.size() <= 500;
 
       // Quien la mandó puede cambiar todo, menos de quién es y quiénes participan.
-      allow update: if signedIn() && cur().from == me()
+      allow update: if isMember() && cur().from == me()
         && nxt().from == cur().from
         && nxt().participants == cur().participants
         && nxt().invites[me()] == 'owner';
 
       // Los demás: responden (aceptar / rechazar / salir) y, si aceptaron, trabajan en la tarea.
-      allow update: if signedIn() && cur().from != me()
+      allow update: if isMember() && cur().from != me()
         && me() in cur().participants
         && !changed().hasAny(['from', 'participants', 'names', 'mode', 'fish', 'message', 'createdAt'])
         && nxt().invites.diff(cur().invites).affectedKeys().hasOnly([me()])
@@ -55,7 +108,7 @@ service cloud.firestore {
           || (cur().invites[me()] == 'accepted' && nxt().invites[me()] == 'accepted')
         );
 
-      allow delete: if signedIn() && cur().from == me();
+      allow delete: if isMember() && cur().from == me();
     }
   }
 }

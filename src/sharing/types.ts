@@ -49,19 +49,31 @@ export type NewSharedDoc = Omit<SharedDoc, 'id'>;
 /** Cambios a un documento. Las claves pueden ser rutas con punto (`invites.uid`). */
 export type DocPatch = Record<string, unknown>;
 
+/** Cómo está este navegador respecto del equipo. */
+export interface TeamState {
+  /** ¿Ya se armó el equipo (hay alguien que lo administra)? */
+  setup: boolean;
+  /** Persona del equipo que eligió este navegador. */
+  memberId: string | null;
+  /** ¿Este navegador puede administrar el equipo? */
+  admin: boolean;
+}
+
 export interface Backend {
   kind: 'firebase' | 'demo';
-  /** Puede entrar con Google. */
-  google: boolean;
-  onAuth(cb: (p: Profile | null) => void): () => void;
-  signInWithGoogle(): Promise<void>;
-  signInWithEmail(email: string, password: string): Promise<void>;
-  signUpWithEmail(name: string, email: string, password: string): Promise<Profile>;
-  resetPassword(email: string): Promise<void>;
-  signOut(): Promise<void>;
-  saveProfile(p: Profile): Promise<void>;
-  watchUsers(cb: (users: Profile[]) => void, onError: (e: unknown) => void): () => void;
-  watchShared(uid: string, cb: (docs: SharedDoc[]) => void, onError: (e: unknown) => void): () => void;
+  /** Entra sin cuenta (anónimo) y avisa el id de este navegador. */
+  start(cb: (deviceId: string | null) => void, onError: (e: unknown) => void): void;
+  readTeam(deviceId: string): Promise<TeamState>;
+  /** Primera vez: arma el equipo con quien lo administra. Devuelve su id de persona. */
+  setupTeam(deviceId: string, me: { name: string; email: string }, adminCode: string): Promise<string>;
+  claim(deviceId: string, memberId: string): Promise<void>;
+  unclaim(deviceId: string): Promise<void>;
+  becomeAdmin(deviceId: string, code: string): Promise<void>;
+  watchMembers(cb: (members: Profile[]) => void, onError: (e: unknown) => void): () => void;
+  addMember(m: { name: string; email: string }): Promise<string>;
+  updateMember(id: string, m: { name: string; email: string }): Promise<void>;
+  removeMember(id: string): Promise<void>;
+  watchShared(memberId: string, cb: (docs: SharedDoc[]) => void, onError: (e: unknown) => void): () => void;
   create(doc: NewSharedDoc): Promise<string>;
   patch(id: string, patch: DocPatch): Promise<void>;
   /** Lee, cambia y guarda de una (para que dos personas tildando a la vez no se pisen). */

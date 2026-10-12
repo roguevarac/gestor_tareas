@@ -16,7 +16,11 @@ export function errorText(e: unknown): string | null {
     'auth/unauthorized-domain':
       'Este sitio no está autorizado en Firebase (Authentication → Configuración → Dominios autorizados).',
     'auth/operation-not-allowed':
-      'Ese modo de entrar no está habilitado en Firebase (Authentication → Método de acceso).',
+      'Falta habilitar el acceso “Anónimo” en Firebase (Authentication → Método de acceso).',
+    'auth/admin-restricted-operation':
+      'Falta habilitar el acceso “Anónimo” en Firebase (Authentication → Método de acceso).',
+    'auth/configuration-not-found':
+      'Falta activar Authentication en Firebase (Authentication → Comenzar → Anónimo).',
     'permission-denied': 'El servidor no dejó hacer eso. ¿Están publicadas las reglas de Firestore?',
     unavailable: 'Sin conexión con el servidor. Probá de nuevo en un rato.',
     'failed-precondition': 'Sin conexión con el servidor. Probá de nuevo cuando vuelva internet.',

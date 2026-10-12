@@ -46,6 +46,7 @@ function SendForm() {
   const source = useShared((s) => s.sendDialog?.task);
   const me = useShared((s) => s.me)!;
   const others = useOthers();
+  const isAdmin = useShared((s) => s.isAdmin);
   const toast = useUI((s) => s.toast);
 
   const [title, setTitle] = useState(source?.title ?? '');
@@ -147,10 +148,12 @@ function SendForm() {
         {others.length === 0 ? (
           <div className="send-empty">
             <p>
-              Todavía no entró nadie más. Pasales el link de la app; cuando entren con su cuenta van a aparecer acá.
+              {isAdmin
+                ? 'Todavía no hay nadie más en el equipo. Sumalos desde la Pecera → Equipo.'
+                : 'Todavía no hay nadie más en el equipo. Pedile a quien lo administra que sume gente.'}
             </p>
             <button type="button" className="btn btn-secondary btn-sm" onClick={shareLink}>
-              <IconCopy size={15} /> Copiar el link
+              <IconCopy size={15} /> Copiar el link de la app
             </button>
           </div>
         ) : (

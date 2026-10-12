@@ -45,7 +45,7 @@ function IncomingCard({
   onLeave(v: 'accept' | 'decline'): void;
   more: number;
 }) {
-  const me = useShared((s) => s.me?.uid ?? '');
+  const me = useShared((s) => s.memberId ?? '');
   const toast = useUI((s) => s.toast);
   const from = doc.names[doc.from] ?? 'Alguien';
   const says = SPECIES.find((s) => s.kind === doc.fish)?.says;

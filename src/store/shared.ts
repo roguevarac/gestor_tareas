@@ -24,20 +24,32 @@ import { uid as newId } from '../lib/id';
 import { useTasks } from './tasks';
 import { useUI } from './ui';
 
-export type SharingStatus = 'off' | 'loading' | 'signedOut' | 'ready';
+export type SharingStatus = 'off' | 'loading' | 'setup' | 'choose' | 'ready';
 
 interface SharedState {
+  /**
+   * off: no hay servidor configurado · loading · setup: falta armar el equipo ·
+   * choose: este navegador todavía no eligió quién es · ready
+   */
   status: SharingStatus;
   backendKind: Backend['kind'] | null;
-  google: boolean;
+  /** Id de este navegador (login anónimo). */
+  deviceId: string | null;
+  /** Este navegador puede administrar el equipo. */
+  isAdmin: boolean;
+  /** Persona del equipo que eligió este navegador. */
+  memberId: string | null;
   me: Profile | null;
+  /** Todo el equipo. */
   users: Profile[];
+  membersLoaded: boolean;
   docs: SharedDoc[];
   /** Tareas que acabo de tirar al balde (se esconden ya, sin esperar al servidor). */
   hidden: Record<string, true>;
   /** Proyectos compartidos plegados en este navegador. */
   collapsed: Record<string, boolean>;
 
+  /** Diálogo de entrar (elegir quién sos / armar el equipo). */
   authOpen: boolean;
   peceraOpen: boolean;
   /** Diálogo de mandar un pez: null cerrado, {} pez nuevo, {task} una tarea mía. */
@@ -49,9 +61,12 @@ interface SharedState {
 export const useShared = create<SharedState>()(() => ({
   status: 'off',
   backendKind: null,
-  google: false,
+  deviceId: null,
+  isAdmin: false,
+  memberId: null,
   me: null,
   users: [],
+  membersLoaded: false,
   docs: [],
   hidden: {},
   collapsed: readJSON('mis-tareas:shared-collapsed', {}),
@@ -79,8 +94,7 @@ function writeJSON(key: string, value: unknown) {
 }
 
 let backend: Backend | null = null;
-let unwatch: (() => void)[] = [];
-let pendingName: string | null = null;
+let unwatchShared: (() => void) | null = null;
 let started = false;
 
 const set = useShared.setState;
@@ -112,30 +126,70 @@ export async function startSharing(): Promise<void> {
   } else {
     return;
   }
-  set({ status: 'loading', backendKind: backend.kind, google: backend.google });
-  backend.onAuth((p) => {
-    unwatch.forEach((u) => u());
-    unwatch = [];
-    if (!p) {
-      set({ status: 'signedOut', me: null, users: [], docs: [] });
-      updateBadge(0);
-      return;
+  set({ status: 'loading', backendKind: backend.kind });
+  let watchingMembers = false;
+  backend.start(
+    (deviceId) => {
+      if (!deviceId) return;
+      set({ deviceId });
+      if (!watchingMembers) {
+        watchingMembers = true;
+        backend!.watchMembers((users) => {
+          set({ users, membersLoaded: true });
+          syncMe();
+        }, fail);
+      }
+      void refreshTeam();
+    },
+    (e) => {
+      console.error(e);
+      set({ status: 'off' });
+      const t = errorText(e);
+      if (t) toast(t);
+    },
+  );
+}
+
+async function refreshTeam() {
+  const deviceId = get().deviceId;
+  if (!backend || !deviceId) return;
+  try {
+    const team = await backend.readTeam(deviceId);
+    set({ isAdmin: team.admin });
+    if (!team.setup) setMember(null, 'setup');
+    else setMember(team.memberId, team.memberId ? 'ready' : 'choose');
+  } catch (e) {
+    fail(e);
+  }
+}
+
+function setMember(memberId: string | null, status: SharingStatus) {
+  if (get().memberId !== memberId) {
+    unwatchShared?.();
+    unwatchShared = null;
+    set({ docs: [], hidden: {} });
+    if (memberId && backend) {
+      unwatchShared = backend.watchShared(memberId, (docs) => onDocs(memberId, docs), fail);
     }
-    const profile = pendingName ? { ...p, name: pendingName } : p;
-    pendingName = null;
-    set({ status: 'ready', me: profile, authOpen: false });
-    backend!.saveProfile(profile).catch(fail);
-    unwatch.push(
-      backend!.watchUsers(
-        (users) => {
-          const mine = users.find((u) => u.uid === profile.uid);
-          set((s) => ({ users, me: s.me && mine?.name ? { ...s.me, name: mine.name } : s.me }));
-        },
-        fail,
-      ),
-      backend!.watchShared(profile.uid, (docs) => onDocs(profile.uid, docs), fail),
-    );
-  });
+  }
+  set({ memberId, status, ...(status === 'ready' ? { authOpen: false } : {}) });
+  syncMe();
+  if (!memberId) updateBadge(0);
+}
+
+/** Mi perfil sale de la lista del equipo (si me sacaron del equipo, vuelvo a elegir). */
+function syncMe() {
+  const { memberId, users, membersLoaded, status } = get();
+  if (!memberId) {
+    if (get().me) set({ me: null });
+    return;
+  }
+  const mine = users.find((u) => u.uid === memberId);
+  if (mine) set({ me: mine });
+  else if (membersLoaded && status === 'ready') {
+    set({ me: null });
+    setMember(null, 'choose');
+  }
 }
 
 // ---------------- Lo que llega del servidor ----------------
@@ -202,7 +256,7 @@ function updateBadge(n: number) {
 
 export function useSharedTasks(): Task[] {
   const docs = useShared((s) => s.docs);
-  const me = useShared((s) => s.me?.uid);
+  const me = useShared((s) => s.memberId);
   const hidden = useShared((s) => s.hidden);
   const collapsed = useShared((s) => s.collapsed);
   return useMemo(() => {
@@ -216,7 +270,7 @@ export function useSharedTasks(): Task[] {
 
 export function useIncoming(): SharedDoc[] {
   const docs = useShared((s) => s.docs);
-  const me = useShared((s) => s.me?.uid);
+  const me = useShared((s) => s.memberId);
   return useMemo(
     () => (me ? docs.filter((d) => isIncomingFor(d, me)).sort((a, b) => a.createdAt - b.createdAt) : []),
     [docs, me],
@@ -225,7 +279,7 @@ export function useIncoming(): SharedDoc[] {
 
 export function useSent(): SharedDoc[] {
   const docs = useShared((s) => s.docs);
-  const me = useShared((s) => s.me?.uid);
+  const me = useShared((s) => s.memberId);
   return useMemo(
     () => (me ? docs.filter((d) => d.from === me).sort((a, b) => b.createdAt - a.createdAt) : []),
     [docs, me],
@@ -235,7 +289,7 @@ export function useSent(): SharedDoc[] {
 /** Otras personas que usan la app. */
 export function useOthers(): Profile[] {
   const users = useShared((s) => s.users);
-  const me = useShared((s) => s.me?.uid);
+  const me = useShared((s) => s.memberId);
   return useMemo(
     () => users.filter((u) => u.uid !== me && u.name).sort((a, b) => a.name.localeCompare(b.name, 'es')),
     [users, me],
@@ -244,52 +298,68 @@ export function useOthers(): Profile[] {
 
 const docById = (id: string) => get().docs.find((d) => d.id === id);
 
-// ---------------- Cuenta ----------------
+// ---------------- Equipo ----------------
 
-export const sharingAuth = {
-  async google() {
+const needDevice = () => {
+  const d = get().deviceId;
+  if (!backend || !d) throw new Error('Todavía no hay conexión con el servidor. Probá de nuevo en un momento.');
+  return d;
+};
+
+const wrap = async <T,>(fn: () => Promise<T>, fallback: string): Promise<T> => {
+  try {
+    return await fn();
+  } catch (e) {
+    console.error(e);
+    throw new Error(errorText(e) ?? fallback);
+  }
+};
+
+export const team = {
+  /** Primera vez: quien administra arma el equipo y queda adentro. */
+  async setup(name: string, email: string, adminCode: string) {
+    const d = needDevice();
+    const id = await wrap(
+      () => backend!.setupTeam(d, { name: name.trim(), email: email.trim() }, adminCode.trim()),
+      'No pude armar el equipo',
+    );
+    set({ isAdmin: true });
+    setMember(id, 'ready');
+  },
+  /** "¿Quién sos?": este navegador queda como esa persona. */
+  async claim(memberId: string) {
+    const d = needDevice();
+    await wrap(() => backend!.claim(d, memberId), 'No pude entrar');
+    setMember(memberId, 'ready');
+  },
+  /** Cambiar de persona en esta compu. */
+  async leave() {
+    const d = needDevice();
+    await wrap(() => backend!.unclaim(d), 'No pude salir');
+    setMember(null, 'choose');
+  },
+  async becomeAdmin(code: string) {
+    const d = needDevice();
     try {
-      await backend?.signInWithGoogle();
+      await backend!.becomeAdmin(d, code.trim());
     } catch (e) {
-      const t = errorText(e);
-      if (t) throw new Error(t);
+      console.error(e);
+      if ((e as { code?: string }).code === 'permission-denied') throw new Error('Esa no es la clave.');
+      throw new Error(errorText(e) ?? 'No pude comprobar la clave');
     }
+    set({ isAdmin: true });
   },
-  async email(email: string, password: string) {
-    try {
-      await backend?.signInWithEmail(email, password);
-    } catch (e) {
-      throw new Error(errorText(e) ?? 'No pude entrar');
-    }
+  async add(name: string, email: string) {
+    if (!backend || !name.trim()) return;
+    await wrap(() => backend!.addMember({ name: name.trim(), email: email.trim() }), 'No pude sumarlo');
   },
-  async signUp(name: string, email: string, password: string) {
-    pendingName = name.trim();
-    try {
-      const p = await backend?.signUpWithEmail(name, email, password);
-      if (p) {
-        set((s) => (s.me?.uid === p.uid ? { me: { ...s.me, name: p.name } } : {}));
-        await backend?.saveProfile(p);
-      }
-    } catch (e) {
-      pendingName = null;
-      throw new Error(errorText(e) ?? 'No pude crear la cuenta');
-    }
+  async update(id: string, name: string, email: string) {
+    if (!backend || !name.trim()) return;
+    await backend.updateMember(id, { name: name.trim(), email: email.trim() }).catch(fail);
   },
-  async reset(email: string) {
-    try {
-      await backend?.resetPassword(email);
-    } catch (e) {
-      throw new Error(errorText(e) ?? 'No pude mandar el mail');
-    }
-  },
-  async rename(name: string) {
-    const me = get().me;
-    if (!me || !name.trim()) return;
-    set({ me: { ...me, name: name.trim() } });
-    await backend?.saveProfile({ ...me, name: name.trim() }).catch(fail);
-  },
-  async signOut() {
-    await backend?.signOut().catch(fail);
+  async remove(id: string) {
+    if (!backend) return;
+    await backend.removeMember(id).catch(fail);
   },
 };
 
@@ -312,7 +382,7 @@ export async function sendFish(input: SendInput, toUids: string[], localTaskId?:
 }
 
 function setInvite(id: string, state: 'accepted' | 'declined' | 'left') {
-  const me = get().me?.uid;
+  const me = get().memberId;
   if (!backend || !me) return Promise.resolve();
   const patch: DocPatch = { [`invites.${me}`]: state, updatedAt: Date.now() };
   localApply(id, patch);
@@ -329,7 +399,7 @@ export function snoozeFish(id: string) {
 /** Pez que mandé y no aceptaron (o que todavía no vieron): vuelve a mi lista como tarea mía. */
 export async function recoverSent(id: string) {
   const d = docById(id);
-  const me = get().me?.uid;
+  const me = get().memberId;
   if (!backend || !d || d.from !== me) return;
   const tasks = useTasks.getState();
   const newId_ = tasks.addTask(d.kind, d.title);
@@ -377,7 +447,7 @@ function mutateDoc(id: string, fn: (d: SharedDoc) => DocPatch | null) {
   void backend.mutate(id, fn).catch(fail);
 }
 
-const me = () => get().me?.uid ?? '';
+const me = () => get().memberId ?? '';
 
 export const sharedOps = {
   update(id: string, patch: Partial<Task>) {

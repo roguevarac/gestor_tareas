@@ -31,9 +31,17 @@ El tiempo se puede escribir como `45`, `45 min`, `1h`, `1h 30`, `1:30`, `1,5 hs`
 
 ## Compartir tareas: la pecera
 
-Con **Compartir** (arriba) cada persona entra con su cuenta de Google o con mail y contraseña. Desde ahí:
+Es para un equipo de trabajo, sin cuentas ni contraseñas:
 
-- **Mandar un pez**: elegís la tarea (nueva, o una tuya desde su detalle → *Mandar a alguien*), a quién, el pez
+- **Quien administra** arma el equipo la primera vez (Compartir → *Armar el equipo*, con una clave para administrar)
+  y suma a la gente (nombre y mail) desde **Pecera → Equipo**. Desde otra compu entra con *Administro el equipo* y
+  la clave.
+- **Cada persona**, la primera vez en su compu, toca **Compartir** y elige su nombre de la lista. La compu la
+  recuerda. Si la compu la usa otra persona: Pecera → *No soy …*.
+
+Después:
+
+- **Compartir con… / Mandar un pez**: elegís la tarea (nueva, o una tuya desde su detalle), a quién, el pez
   (mojarrita = algo rápido, dorado = importante, surubí = algo grande, pez payaso = un favorcito, pez globo = ¡urgente!)
   y unas palabras si querés.
   - **Que la haga**: la tarea pasa a ser solo de la otra persona. Si se la mandás a varias, le llega una a cada una.
@@ -42,21 +50,17 @@ Con **Compartir** (arriba) cada persona entra con su cuenta de Google o con mail
     iniciales; tocándolo se cambia) y cualquiera puede tildar. Cuando alguien lo tira al balde, se termina para todos.
 - **Recibir**: el pez llega nadando con la tarea. *Aceptar* la pone en tu lista, *No la tomo* le avisa a quien la
   mandó (y la puede recuperar), *Después* la deja esperando en la pecera.
-- **Pecera**: lo que te mandaron y todavía no respondiste, y todo lo que mandaste con su estado.
 
-Tus tareas personales siguen guardadas solo en tu navegador. Las compartidas se guardan en Firebase (de Google) y
-solo las ven quienes participan. Modo de prueba sin Firebase: abrir la app con `?demo=ana` en una pestaña y
-`?demo=juan` en otra.
+Tus tareas personales siguen guardadas solo en tu navegador. Las compartidas se guardan en Firebase (de Google).
+Ojo: como no hay contraseñas, cualquiera que tenga el link puede elegir un nombre de la lista; es para usar entre
+gente de confianza. Modo de prueba sin Firebase: abrir la app con `?demo=ana` en una pestaña y `?demo=juan` en otra.
 
 ### Configurar Firebase (una sola vez)
 
-1. [console.firebase.google.com](https://console.firebase.google.com) → crear un proyecto (sin Analytics).
-2. **Authentication** → Comenzar → habilitar **Google** y **Correo electrónico/contraseña**. En *Configuración →
-   Dominios autorizados* agregar el dominio donde está publicada la app (`roguevarac.github.io`).
-3. **Firestore Database** → Crear base de datos (modo producción). En **Reglas**, pegar el contenido de
-   [`firestore.rules`](firestore.rules) y **Publicar**.
-4. ⚙️ Configuración del proyecto → Tus apps → **Web** → registrar y copiar el `firebaseConfig` en
-   [`src/sharing/config.ts`](src/sharing/config.ts). Mientras ahí diga `null`, la parte de compartir no aparece.
+1. Proyecto `mis-tareas-pecera` con Firestore (ya creado) y la configuración en
+   [`src/sharing/config.ts`](src/sharing/config.ts).
+2. **Authentication** → Comenzar → **Método de acceso** → habilitar **Anónimo**.
+3. Reglas: `firebase deploy --only firestore:rules` (usa [`firestore.rules`](firestore.rules) y `firebase.json`).
 
 ## Vincular mails de Outlook
 
@@ -134,6 +138,11 @@ Source: GitHub Actions**. En repos privados, GitHub Pages necesita un plan pago 
 `dist/` se puede subir a cualquier hosting estático (Netlify, Cloudflare Pages, un servidor interno…).
 
 ## Cambios
+
+### 1.3
+
+- Compartir en modo equipo: sin cuentas. Quien administra carga a la gente y cada uno elige su nombre.
+- "Compartir con…" en el detalle de cada tarea.
 
 ### 1.2
 

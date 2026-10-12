@@ -3157,3 +3157,115 @@ textarea.log-comment {
     flex: 1;
   }
 }
+
+/* ¿Quién sos? y equipo */
+
+.who-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  max-height: min(46vh, 380px);
+  overflow: auto;
+  padding: 2px;
+}
+
+.who {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  grid-template-rows: auto auto;
+  column-gap: 12px;
+  align-items: center;
+  text-align: left;
+  padding: 8px 12px;
+  border-radius: 14px;
+  border: 1.5px solid var(--line);
+  background: var(--surface-2);
+  transition:
+    border-color 0.15s,
+    background 0.15s;
+}
+
+.who .avatar {
+  grid-row: span 2;
+}
+
+.who-name {
+  font-weight: 800;
+}
+
+.who small {
+  color: var(--ink-faint);
+  font-weight: 650;
+}
+
+.who:hover {
+  border-color: var(--line-strong);
+}
+
+.who.is-on {
+  border-color: var(--teal);
+  background: var(--primary-soft);
+  box-shadow: 0 0 0 3px rgba(33, 158, 188, 0.15);
+}
+
+.team-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.team-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 6px 8px;
+  border-radius: 12px;
+  background: var(--surface-2);
+}
+
+.team-main {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.team-main .editable {
+  text-align: left;
+}
+
+.team-name {
+  font-weight: 800;
+}
+
+.team-email {
+  font-size: 0.8rem;
+  color: var(--ink-faint);
+  font-weight: 650;
+}
+
+.team-email.is-empty {
+  font-style: italic;
+  opacity: 0.7;
+}
+
+.team-confirm {
+  display: flex;
+  gap: 4px;
+}
+
+.team-add {
+  display: grid;
+  grid-template-columns: 1fr 1fr auto;
+  gap: 6px;
+  margin-top: 10px;
+}
+
+@media (max-width: 640px) {
+  .team-add {
+    grid-template-columns: 1fr;
+  }
+}

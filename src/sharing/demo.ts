@@ -4,23 +4,27 @@ import { uid as newId } from '../lib/id';
 
 /**
  * Servidor de mentira para probar sin Firebase: todo en el localStorage de este navegador.
- * Abrí dos pestañas con `?demo=ana` y `?demo=juan` y se mandan peces entre ellas.
+ * Abrí dos pestañas con `?demo=ana` y `?demo=juan` y se comportan como dos compus distintas.
  */
 const KEY = 'mis-tareas:demo-db';
 
 interface DB {
-  users: Record<string, Omit<Profile, 'uid'>>;
+  setup: boolean;
+  adminCode: string | null;
+  admins: Record<string, true>;
+  claims: Record<string, string>;
+  members: Record<string, Omit<Profile, 'uid'>>;
   shared: Record<string, Omit<SharedDoc, 'id'>>;
 }
 
 function load(): DB {
   try {
     const raw = localStorage.getItem(KEY);
-    if (raw) return JSON.parse(raw) as DB;
+    if (raw) return { admins: {}, claims: {}, members: {}, shared: {}, setup: false, adminCode: null, ...JSON.parse(raw) };
   } catch {
     /* vacío */
   }
-  return { users: {}, shared: {} };
+  return { setup: false, adminCode: null, admins: {}, claims: {}, members: {}, shared: {} };
 }
 
 const listeners = new Set<() => void>();
@@ -31,12 +35,11 @@ function save(db: DB) {
   queueMicrotask(notify);
 }
 
-
-const capital = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
+const denied = () => Object.assign(new Error('permission-denied'), { code: 'permission-denied' });
+const notFound = () => Object.assign(new Error('not-found'), { code: 'not-found' });
 
 export function createDemoBackend(handle: string): Backend {
-  const slug = handle.toLowerCase().replace(/[^a-z0-9]/g, '') || 'yo';
-  const me: Profile = { uid: `demo-${slug}`, name: capital(slug), email: `${slug}@demo` };
+  const device = `dev-${handle}`;
   if (typeof window !== 'undefined') {
     window.addEventListener('storage', (e) => {
       if (e.key === KEY) notify();
@@ -48,34 +51,77 @@ export function createDemoBackend(handle: string): Backend {
     return () => void listeners.delete(fn);
   };
   const delay = () => new Promise((r) => setTimeout(r, 60));
+  const isAdmin = (db: DB) => !!db.admins[device];
 
   return {
     kind: 'demo',
-    google: false,
-    onAuth(cb) {
-      queueMicrotask(() => cb(me));
-      return () => {};
+    start(cb) {
+      queueMicrotask(() => cb(device));
     },
-    async signInWithGoogle() {},
-    async signInWithEmail() {},
-    async signUpWithEmail() {
-      return me;
-    },
-    async resetPassword() {},
-    async signOut() {},
-    async saveProfile(p) {
+    async readTeam(d) {
       const db = load();
-      db.users[p.uid] = { name: p.name, email: p.email, photoURL: p.photoURL ?? null };
+      const memberId = db.claims[d] ?? null;
+      return { setup: db.setup, memberId: memberId && db.members[memberId] ? memberId : null, admin: !!db.admins[d] };
+    },
+    async setupTeam(d, me, adminCode) {
+      await delay();
+      const db = load();
+      if (db.setup) throw denied();
+      const id = newId();
+      db.setup = true;
+      db.adminCode = adminCode;
+      db.admins[d] = true;
+      db.members[id] = { name: me.name, email: me.email };
+      db.claims[d] = id;
+      save(db);
+      return id;
+    },
+    async claim(d, memberId) {
+      const db = load();
+      if (!db.members[memberId]) throw denied();
+      db.claims[d] = memberId;
       save(db);
     },
-    watchUsers(cb) {
-      return subscribe(() => cb(Object.entries(load().users).map(([uid, u]) => ({ uid, ...u }))));
+    async unclaim(d) {
+      const db = load();
+      delete db.claims[d];
+      save(db);
     },
-    watchShared(uid, cb) {
+    async becomeAdmin(d, code) {
+      await delay();
+      const db = load();
+      if (code !== db.adminCode) throw denied();
+      db.admins[d] = true;
+      save(db);
+    },
+    watchMembers(cb) {
+      return subscribe(() => cb(Object.entries(load().members).map(([uid, m]) => ({ uid, ...m }))));
+    },
+    async addMember(m) {
+      const db = load();
+      if (!isAdmin(db)) throw denied();
+      const id = newId();
+      db.members[id] = { name: m.name, email: m.email };
+      save(db);
+      return id;
+    },
+    async updateMember(id, m) {
+      const db = load();
+      if (!isAdmin(db)) throw denied();
+      db.members[id] = { name: m.name, email: m.email };
+      save(db);
+    },
+    async removeMember(id) {
+      const db = load();
+      if (!isAdmin(db)) throw denied();
+      delete db.members[id];
+      save(db);
+    },
+    watchShared(memberId, cb) {
       return subscribe(() =>
         cb(
           Object.entries(load().shared)
-            .filter(([, d]) => d.participants.includes(uid))
+            .filter(([, d]) => d.participants.includes(memberId))
             .map(([id, d]) => ({ ...d, id })),
         ),
       );
@@ -91,7 +137,7 @@ export function createDemoBackend(handle: string): Backend {
     async patch(id, patch) {
       await delay();
       const db = load();
-      if (!db.shared[id]) throw Object.assign(new Error('not-found'), { code: 'not-found' });
+      if (!db.shared[id]) throw notFound();
       db.shared[id] = apply(db.shared[id], patch);
       save(db);
     },
@@ -99,7 +145,7 @@ export function createDemoBackend(handle: string): Backend {
       await delay();
       const db = load();
       const d = db.shared[id];
-      if (!d) throw Object.assign(new Error('not-found'), { code: 'not-found' });
+      if (!d) throw notFound();
       const patch = fn({ ...d, id });
       if (!patch) return;
       db.shared[id] = apply(d, patch);

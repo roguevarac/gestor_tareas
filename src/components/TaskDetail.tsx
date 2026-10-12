@@ -101,7 +101,7 @@ export function TaskDetail() {
                   else useShared.setState({ authOpen: true });
                 }}
               >
-                <IconSend size={16} /> <span className="hide-sm">Mandar a alguien</span>
+                <IconSend size={16} /> <span className="hide-sm">Compartir con…</span>
               </button>
             )}
             <button

@@ -50,7 +50,7 @@ function ShareButton() {
   const status = useShared((s) => s.status);
   const waiting = useIncoming().length;
   if (status === 'off' || status === 'loading') return null;
-  if (status === 'signedOut')
+  if (status === 'setup' || status === 'choose')
     return (
       <button type="button" className="top-btn" onClick={() => useShared.setState({ authOpen: true })} title="Compartir tareas con otras personas">
         <IconUsers size={18} /> <span className="hide-sm">Compartir</span>

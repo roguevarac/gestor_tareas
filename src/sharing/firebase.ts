@@ -1,21 +1,11 @@
 import { initializeApp } from 'firebase/app';
-import {
-  GoogleAuthProvider,
-  createUserWithEmailAndPassword,
-  getAuth,
-  onAuthStateChanged,
-  sendPasswordResetEmail,
-  signInWithEmailAndPassword,
-  signInWithPopup,
-  signOut,
-  updateProfile,
-  type User,
-} from 'firebase/auth';
+import { getAuth, onAuthStateChanged, signInAnonymously } from 'firebase/auth';
 import {
   addDoc,
   collection,
   deleteDoc,
   doc,
+  getDoc,
   initializeFirestore,
   onSnapshot,
   persistentLocalCache,
@@ -25,15 +15,19 @@ import {
   setDoc,
   updateDoc,
   where,
+  writeBatch,
 } from 'firebase/firestore';
 import type { Backend, Profile, SharedDoc } from './types';
 
-const toProfile = (u: User): Profile => ({
-  uid: u.uid,
-  name: u.displayName || (u.email ?? '').split('@')[0] || 'Sin nombre',
-  email: u.email ?? '',
-  photoURL: u.photoURL,
-});
+/** Lee un documento; si las reglas no dejan (no es mío / no existe), cuenta como que no está. */
+async function exists(get: () => Promise<{ exists(): boolean }>): Promise<boolean> {
+  try {
+    return (await get()).exists();
+  } catch (e) {
+    if ((e as { code?: string }).code === 'permission-denied') return false;
+    throw e;
+  }
+}
 
 export function createFirebaseBackend(config: Record<string, string>): Backend {
   const app = initializeApp(config);
@@ -43,49 +37,64 @@ export function createFirebaseBackend(config: Record<string, string>): Backend {
     localCache: persistentLocalCache({ tabManager: persistentMultipleTabManager() }),
   });
   const shared = collection(db, 'shared');
+  const members = collection(db, 'members');
 
   return {
     kind: 'firebase',
-    google: true,
-    onAuth: (cb) => onAuthStateChanged(auth, (u) => cb(u ? toProfile(u) : null)),
-    async signInWithGoogle() {
-      const provider = new GoogleAuthProvider();
-      provider.setCustomParameters({ prompt: 'select_account' });
-      await signInWithPopup(auth, provider);
+    start(cb, onError) {
+      onAuthStateChanged(auth, (u) => {
+        if (u) cb(u.uid);
+        else signInAnonymously(auth).catch((e) => {
+          onError(e);
+          cb(null);
+        });
+      });
     },
-    async signInWithEmail(email, password) {
-      await signInWithEmailAndPassword(auth, email.trim(), password);
+    async readTeam(deviceId) {
+      const [setup, claim, admin] = await Promise.all([
+        exists(() => getDoc(doc(db, 'config', 'public'))),
+        getDoc(doc(db, 'claims', deviceId)).catch(() => null),
+        exists(() => getDoc(doc(db, 'admins', deviceId))),
+      ]);
+      const memberId = claim?.exists() ? ((claim.data().memberId as string) ?? null) : null;
+      return { setup, memberId, admin };
     },
-    async signUpWithEmail(name, email, password) {
-      const cred = await createUserWithEmailAndPassword(auth, email.trim(), password);
-      await updateProfile(cred.user, { displayName: name.trim() });
-      return { ...toProfile(cred.user), name: name.trim() };
+    async setupTeam(deviceId, me, adminCode) {
+      const batch = writeBatch(db);
+      const memberRef = doc(members);
+      batch.set(doc(db, 'config', 'secrets'), { adminCode });
+      batch.set(doc(db, 'admins', deviceId), { code: adminCode });
+      batch.set(memberRef, { name: me.name, email: me.email, createdAt: Date.now() });
+      batch.set(doc(db, 'claims', deviceId), { memberId: memberRef.id, at: Date.now() });
+      batch.set(doc(db, 'config', 'public'), { createdAt: Date.now() });
+      await batch.commit();
+      return memberRef.id;
     },
-    resetPassword: (email) => sendPasswordResetEmail(auth, email.trim()),
-    signOut: () => signOut(auth),
-    async saveProfile(p) {
-      await setDoc(
-        doc(db, 'users', p.uid),
-        { name: p.name, email: p.email, photoURL: p.photoURL ?? null, updatedAt: Date.now() },
-        { merge: true },
-      );
-    },
-    watchUsers(cb, onError) {
+    claim: (deviceId, memberId) => setDoc(doc(db, 'claims', deviceId), { memberId, at: Date.now() }),
+    unclaim: (deviceId) => deleteDoc(doc(db, 'claims', deviceId)),
+    becomeAdmin: (deviceId, code) => setDoc(doc(db, 'admins', deviceId), { code }),
+    watchMembers(cb, onError) {
       return onSnapshot(
-        collection(db, 'users'),
+        members,
         (snap) =>
           cb(
-            snap.docs.map((d) => {
+            snap.docs.map((d): Profile => {
               const v = d.data();
-              return { uid: d.id, name: v.name ?? '', email: v.email ?? '', photoURL: v.photoURL ?? null };
+              return { uid: d.id, name: v.name ?? '', email: v.email ?? '' };
             }),
           ),
         onError,
       );
     },
-    watchShared(uid, cb, onError) {
+    async addMember(m) {
+      const ref = await addDoc(members, { name: m.name, email: m.email, createdAt: Date.now() });
+      return ref.id;
+    },
+    updateMember: (id, m) => updateDoc(doc(db, 'members', id), { name: m.name, email: m.email }),
+    removeMember: (id) => deleteDoc(doc(db, 'members', id)),
+    watchShared(memberId, cb, onError) {
       return onSnapshot(
-        query(shared, where('participants', 'array-contains', uid)),
+        query(shared, where('participants', 'array-contains', memberId)),
         (snap) => cb(snap.docs.map((d) => ({ ...(d.data() as Omit<SharedDoc, 'id'>), id: d.id }))),
         onError,
       );
@@ -101,7 +110,7 @@ export function createFirebaseBackend(config: Record<string, string>): Backend {
       await runTransaction(db, async (tx) => {
         const ref = doc(db, 'shared', id);
         const snap = await tx.get(ref);
-        if (!snap.exists()) throw new Error('not-found');
+        if (!snap.exists()) throw Object.assign(new Error('not-found'), { code: 'not-found' });
         const patch = fn({ ...(snap.data() as Omit<SharedDoc, 'id'>), id });
         if (patch) tx.update(ref, patch);
       });

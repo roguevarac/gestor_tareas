@@ -5,7 +5,7 @@ import {
   declineFish,
   deleteShared,
   recoverSent,
-  sharingAuth,
+  team,
   useIncoming,
   useSent,
   useShared,
@@ -17,7 +17,7 @@ import { Modal } from './Modal';
 import { SpeciesFish } from './Fishes';
 import { Avatar } from './Avatar';
 import { EditableText } from './EditableText';
-import { IconCopy, IconLogout, IconSend } from './Icons';
+import { IconCopy, IconLogout, IconPlus, IconSend, IconX } from './Icons';
 import { copyText } from './MailLinks';
 import { APP_URL } from './SendFishDialog';
 
@@ -26,6 +26,7 @@ export function Pecera() {
   const open = useShared((s) => s.peceraOpen && s.status === 'ready');
   const me = useShared((s) => s.me);
   const backendKind = useShared((s) => s.backendKind);
+  const isAdmin = useShared((s) => s.isAdmin);
   const incoming = useIncoming();
   const sent = useSent();
   const toast = useUI((s) => s.toast);
@@ -48,18 +49,22 @@ export function Pecera() {
           <div className="pecera-account">
             <Avatar uid={me.uid} name={me.name} size={34} />
             <div className="pecera-me">
-              <EditableText value={me.name} onSave={(v) => void sharingAuth.rename(v)} className="pecera-name" ariaLabel="Tu nombre" />
-              <small>{me.email}{backendKind === 'demo' ? ' · modo prueba' : ''}</small>
+              <span className="pecera-name">{me.name}</span>
+              <small>
+                {me.email}
+                {backendKind === 'demo' ? ' · modo prueba' : ''}
+              </small>
             </div>
             <button
               type="button"
               className="btn btn-ghost btn-sm"
               onClick={() => {
                 close();
-                void sharingAuth.signOut();
+                void team.leave().catch((e: Error) => toast(e.message));
               }}
+              title="Si esta compu la usa otra persona"
             >
-              <IconLogout size={15} /> Salir
+              <IconLogout size={15} /> No soy {firstName(me.name)}
             </button>
           </div>
         )
@@ -120,11 +125,17 @@ export function Pecera() {
         )}
       </section>
 
+      {isAdmin ? (
+        <TeamSection />
+      ) : (
+        <section className="pecera-section pecera-invite">
+          <h3>Sumar gente</h3>
+          <p className="muted small">Para sumar a alguien al equipo, pedíselo a quien lo administra.</p>
+        </section>
+      )}
+
       <section className="pecera-section pecera-invite">
-        <h3>Sumar gente</h3>
-        <p className="muted small">
-          Pasales el link. Cuando entren con su cuenta, ya les podés mandar peces.
-        </p>
+        <p className="muted small">Link de la app, para pasarle a quien esté en el equipo:</p>
         <button
           type="button"
           className="btn btn-secondary btn-sm"
@@ -145,7 +156,7 @@ const STATE_LABEL: Record<string, string> = {
 };
 
 function SentItem({ doc }: { doc: SharedDoc }) {
-  const me = useShared((s) => s.me?.uid);
+  const me = useShared((s) => s.memberId);
   const [confirm, setConfirm] = useState(false);
   const recipients = doc.participants.filter((u) => u !== me);
   const total = doc.subtasks.length;
@@ -197,5 +208,104 @@ function SentItem({ doc }: { doc: SharedDoc }) {
         </div>
       </div>
     </li>
+  );
+}
+
+/** Solo para quien administra: la lista del equipo. */
+function TeamSection() {
+  const members = useShared((s) => s.users);
+  const memberId = useShared((s) => s.memberId);
+  const toast = useUI((s) => s.toast);
+  const [name, setName] = useState('');
+  const [email, setEmail] = useState('');
+  const [busy, setBusy] = useState(false);
+  const [confirm, setConfirm] = useState<string | null>(null);
+  const sorted = [...members].sort((a, b) => a.name.localeCompare(b.name, 'es'));
+
+  const add = async () => {
+    if (!name.trim()) return;
+    setBusy(true);
+    try {
+      await team.add(name, email);
+      toast(`${firstName(name)} ya está en el equipo`);
+      setName('');
+      setEmail('');
+    } catch (e) {
+      toast(e instanceof Error ? e.message : 'No pude sumarlo');
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  return (
+    <section className="pecera-section">
+      <h3>
+        Equipo <span className="pond-count">{members.length}</span>
+      </h3>
+      <ul className="team-list">
+        {sorted.map((m) => (
+          <li key={m.uid} className="team-row">
+            <Avatar uid={m.uid} name={m.name} size={28} />
+            <div className="team-main">
+              <EditableText
+                value={m.name}
+                onSave={(v) => v.trim() && void team.update(m.uid, v, m.email)}
+                className="team-name"
+                ariaLabel={`Nombre de ${m.name}`}
+              />
+              <EditableText
+                value={m.email || 'agregar mail'}
+                onSave={(v) => void team.update(m.uid, m.name, v === 'agregar mail' ? '' : v)}
+                className={`team-email ${m.email ? '' : 'is-empty'}`}
+                ariaLabel={`Mail de ${m.name}`}
+              />
+            </div>
+            {m.uid === memberId ? (
+              <span className="tag">vos</span>
+            ) : confirm === m.uid ? (
+              <span className="team-confirm">
+                <button type="button" className="btn btn-danger btn-sm" onClick={() => void team.remove(m.uid)}>
+                  Sacar
+                </button>
+                <button type="button" className="btn btn-ghost btn-sm" onClick={() => setConfirm(null)}>
+                  No
+                </button>
+              </span>
+            ) : (
+              <button
+                type="button"
+                className="icon-btn"
+                onClick={() => setConfirm(m.uid)}
+                aria-label={`Sacar a ${m.name} del equipo`}
+                title="Sacar del equipo"
+              >
+                <IconX size={15} />
+              </button>
+            )}
+          </li>
+        ))}
+      </ul>
+      <form
+        className="team-add"
+        onSubmit={(e) => {
+          e.preventDefault();
+          void add();
+        }}
+      >
+        <input className="input" value={name} onChange={(e) => setName(e.target.value)} placeholder="Nombre" aria-label="Nombre" />
+        <input
+          className="input"
+          type="email"
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+          placeholder="Mail (opcional)"
+          aria-label="Mail"
+        />
+        <button type="submit" className="btn btn-secondary" disabled={busy || !name.trim()}>
+          <IconPlus size={16} /> Sumar
+        </button>
+      </form>
+      <p className="hint muted">Cada persona abre la app, toca Compartir y elige su nombre.</p>
+    </section>
   );
 }
