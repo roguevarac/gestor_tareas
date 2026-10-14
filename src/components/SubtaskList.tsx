@@ -14,7 +14,8 @@ export function SubtaskList({ task, variant = 'card' }: { task: Task; variant?: 
   const setFocusOf = useUI((s) => s.setFocusSubtasksOf);
   const [draft, setDraft] = useState('');
   const inputRef = useRef<HTMLInputElement>(null);
-  const joint = task.shared?.mode === 'joint';
+  // Proyectos compartidos entre varias personas: cada subtarea con su responsable.
+  const joint = !!task.shared && (task.shared.mode === 'joint' || task.shared.people.length > 1);
 
   useEffect(() => {
     if (focusOf === task.id && variant === 'card') {

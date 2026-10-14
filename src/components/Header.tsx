@@ -6,7 +6,8 @@ import { dayKey, formatMinutes, startOfDay, todayLong } from '../lib/time';
 import { downloadFile, makeBackup, parseBackup } from '../lib/backup';
 import { Fish, MiniFish } from './Fish';
 import { Modal } from './Modal';
-import { IconBook, IconDots, IconDownload, IconUpload, IconUsers } from './Icons';
+import { IconBoard, IconBook, IconDots, IconDownload, IconUpload, IconUsers } from './Icons';
+import { useSupervision } from '../store/supervision';
 import { useIncoming, useShared } from '../store/shared';
 import { SpeciesFish } from './Fishes';
 import { useInstallPrompt } from '../hooks/useInstallPrompt';
@@ -38,10 +39,27 @@ export function Header() {
         <button type="button" className="top-btn" onClick={() => setLogOpen(true)}>
           <IconBook size={17} /> <span className="hide-sm">Bitácora</span>
         </button>
+        <BoardButton />
         <ShareButton />
         <MoreMenu />
       </div>
     </header>
+  );
+}
+
+/** Solo supervisión: el tablero con las tareas de todo el equipo. */
+function BoardButton() {
+  const supervisor = useShared((s) => s.status === 'ready' && !!s.me?.supervisor);
+  if (!supervisor) return null;
+  return (
+    <button
+      type="button"
+      className="top-btn"
+      onClick={() => useSupervision.setState({ boardOpen: true })}
+      title="Qué tareas tiene cada uno"
+    >
+      <IconBoard size={17} /> <span className="hide-sm">Tablero</span>
+    </button>
   );
 }
 
@@ -63,7 +81,7 @@ function ShareButton() {
       onClick={() => useShared.setState({ peceraOpen: true })}
       title={waiting ? `${waiting} ${waiting === 1 ? 'pez esperando' : 'peces esperando'}` : 'Pecera: tareas compartidas'}
     >
-      <SpeciesFish kind="payaso" width={34} swim={waiting > 0} />
+      <SpeciesFish kind="koi" width={34} swim={waiting > 0} />
       <span className="hide-sm">Pecera</span>
       {waiting > 0 && <span className="top-badge">{waiting}</span>}
     </button>

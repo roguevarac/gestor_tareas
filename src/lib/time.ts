@@ -107,3 +107,14 @@ const capitalize = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
 export function todayLong(now = Date.now()): string {
   return capitalize(dayFmt.format(now));
 }
+
+/** Hace cuánto, en palabras cortas. */
+export function ago(t: number): string {
+  const m = Math.round((Date.now() - t) / 60000);
+  if (m < 1) return 'recién';
+  if (m < 60) return `hace ${m} min`;
+  const h = Math.round(m / 60);
+  if (h < 24) return `hace ${h} h`;
+  const d = Math.round(h / 24);
+  return d === 1 ? 'ayer' : `hace ${d} días`;
+}

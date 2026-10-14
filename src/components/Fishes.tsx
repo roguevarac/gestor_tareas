@@ -7,15 +7,16 @@ export const SPECIES: { kind: FishKind; name: string; says: string }[] = [
   { kind: 'mojarrita', name: 'Mojarrita', says: 'Algo rápido' },
   { kind: 'dorado', name: 'Dorado', says: 'Importante' },
   { kind: 'surubi', name: 'Surubí', says: 'Algo grande' },
-  { kind: 'payaso', name: 'Pez payaso', says: 'Un favorcito' },
-  { kind: 'globo', name: 'Pez globo', says: '¡Urgente!' },
+  { kind: 'koi', name: 'Koi', says: 'Un favorcito' },
+  { kind: 'tararira', name: 'Tararira', says: '¡Urgente!' },
 ];
 
 export const speciesName = (k: FishKind | undefined) => SPECIES.find((s) => s.kind === k)?.name ?? 'Mojarrita';
+const FEMININE: FishKind[] = ['mojarrita', 'tararira'];
 
 /** Artículo + nombre: "un dorado", "una mojarrita". */
 export const speciesWithArticle = (k: FishKind | undefined) =>
-  (k ?? 'mojarrita') === 'mojarrita' ? 'una mojarrita' : `un ${speciesName(k).toLowerCase()}`;
+  `${FEMININE.includes(SPECIES.some((s) => s.kind === k) ? k! : 'mojarrita') ? 'una' : 'un'} ${speciesName(k).toLowerCase()}`;
 
 interface Props {
   kind?: FishKind;
@@ -27,8 +28,9 @@ interface Props {
 /** Cualquiera de los peces, mirando a la derecha, en la misma caja que la mojarrita (132 × 44). */
 export function SpeciesFish({ kind = 'mojarrita', width = 96, swim = true, className = '' }: Props) {
   const id = useId().replace(/[^a-zA-Z0-9]/g, '');
-  if (kind === 'mojarrita') return <Fish width={width} swim={swim} className={className} />;
-  const Art = ART[kind];
+  // Los peces que ya no están (pez payaso, pez globo) se ven como mojarrita.
+  const Art = kind === 'mojarrita' ? undefined : ART[kind as keyof typeof ART];
+  if (!Art) return <Fish width={width} swim={swim} className={className} />;
   return (
     <svg
       className={`fish fish--${kind} ${swim ? 'fish--swim' : ''} ${className}`}
@@ -42,7 +44,7 @@ export function SpeciesFish({ kind = 'mojarrita', width = 96, swim = true, class
   );
 }
 
-const ART: Record<Exclude<FishKind, 'mojarrita'>, (p: { id: string }) => React.ReactElement> = {
+const ART: Record<'dorado' | 'surubi' | 'koi' | 'tararira', (p: { id: string }) => React.ReactElement> = {
   /** Dorado: dorado intenso, robusto, cabeza grande, hileras de puntitos y cola roja con raya negra. */
   dorado: ({ id }) => (
     <>
@@ -183,110 +185,127 @@ const ART: Record<Exclude<FishKind, 'mojarrita'>, (p: { id: string }) => React.R
     </>
   ),
 
-  /** Pez payaso: naranja, tres bandas blancas con borde negro y aletas redondeadas. */
-  payaso: ({ id }) => (
+  /** Koi: blanco nacarado con manchas rojo-anaranjadas y alguna negra, aletas largas y cola amplia. */
+  koi: ({ id }) => (
     <>
       <defs>
         <linearGradient id={`${id}-b`} x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0" stopColor="#e8590c" />
-          <stop offset="0.5" stopColor="#fb8500" />
-          <stop offset="1" stopColor="#ffa94d" />
+          <stop offset="0" stopColor="#f4efe6" />
+          <stop offset="0.6" stopColor="#fffdf8" />
+          <stop offset="1" stopColor="#efe7da" />
         </linearGradient>
         <clipPath id={`${id}-c`}>
-          <path d="M126 23 C125 13 115 6 98 5.4 C80 5 62 8 50 14 C44 17 40 19.4 37 21 L37 23.4 C40 25 44 27.6 50 30.4 C62 36 80 39.4 98 38.8 C115 38 125 32 126 23 Z" />
+          <path d="M128 23 C126.5 15.5 119 10 106 8.4 C92 6.8 72 8.6 56 12.6 C46 15 38 17.4 33 19 L33 25.6 C38 27.4 46 30 56 32.6 C72 36.4 92 38 106 36.2 C119 34.4 126.5 29.6 128 23 Z" />
         </clipPath>
       </defs>
-      <g className="fish-tail" style={{ transformOrigin: '38px 22px' }}>
+      <g className="fish-tail">
         <path
-          d="M39 20 C33 13 24 9 17 9.6 C15 14 14.6 18 15 22 C14.6 26 15 30 17 34.4 C24 35 33 31 39 24.4 Z"
-          fill="#fb8500"
-          stroke="#161616"
-          strokeWidth="1.4"
+          d="M35 19.2 C27 13.6 18 9.6 6 6.6 C9 11.6 11 16.6 12.4 22 C11 27.4 9 32.6 6 37.6 C18 34.6 27 30.6 35 25 Z"
+          fill="#fff6ec"
+          fillOpacity="0.92"
+          stroke="#b98a6a"
+          strokeWidth="0.7"
           strokeLinejoin="round"
         />
-        <path d="M21 10.6 C18 15 17.6 29 21 33.4" stroke="#fff" strokeWidth="1.8" fill="none" opacity="0.9" />
+        <path d="M30 20 C24 17 17 14 9 11.6 M30 24 C24 27 17 30 9 32.6 M30 22 L12 22" stroke="#e5743a" strokeWidth="0.6" opacity="0.5" fill="none" />
+        <path d="M14 9 C18 11 22 13.6 26 16.4 L22 21 C19 16.6 16 12.6 14 9 Z" fill="#e8562a" opacity="0.75" />
       </g>
-      <g fill="#fb8500" stroke="#161616" strokeWidth="1.3" strokeLinejoin="round">
-        <path className="fish-dorsal" d="M96 6 C92 1 82 -0.4 74 1.4 C66 3.4 58 7 52 12 L70 8.4 Z" />
-        <path d="M86 37.6 C84 42 78 43.6 72 43 C66 42 60 39 56 34.4 Z" />
+      <g fill="#fff4ea" fillOpacity="0.9" stroke="#b98a6a" strokeWidth="0.6" strokeLinejoin="round">
+        <path className="fish-dorsal" d="M92 8 C86 2.6 74 1 62 3.6 C56 5 52 8 49 12.4 L60 11 Z" />
+        <path d="M70 34.4 C68 38.6 64 41.6 59.6 42.6 C57 40 55.4 36.6 55 33 Z" />
       </g>
       <path
-        d="M126 23 C125 13 115 6 98 5.4 C80 5 62 8 50 14 C44 17 40 19.4 37 21 L37 23.4 C40 25 44 27.6 50 30.4 C62 36 80 39.4 98 38.8 C115 38 125 32 126 23 Z"
+        d="M128 23 C126.5 15.5 119 10 106 8.4 C92 6.8 72 8.6 56 12.6 C46 15 38 17.4 33 19 L33 25.6 C38 27.4 46 30 56 32.6 C72 36.4 92 38 106 36.2 C119 34.4 126.5 29.6 128 23 Z"
         fill={`url(#${id}-b)`}
-        stroke="#161616"
-        strokeWidth="1.3"
+        stroke="#9c7a62"
+        strokeWidth="0.9"
       />
-      <g clipPath={`url(#${id}-c)`} fill="#ffffff" stroke="#161616" strokeWidth="1.3">
-        <path d="M110 2 C105 12 105 32 110 42 L116 42 C111 32 111 12 116 2 Z" />
-        <path d="M80 2 C76 12 76 32 80 42 L89 42 C85 32 85 12 89 2 Z" />
-        <path d="M50 2 C47 12 47 32 50 42 L56 42 C53 32 53 12 56 2 Z" />
+      <g clipPath={`url(#${id}-c)`}>
+        <path d="M104 6 C112 10 116 16 114 22 C108 22 100 18 96 12 C97 8 100 6 104 6 Z" fill="#e8562a" />
+        <path d="M86 6 C92 12 92 22 86 28 C78 30 70 24 68 16 C70 10 78 6 86 6 Z" fill="#e8562a" />
+        <path d="M60 14 C64 18 64 26 58 30 C52 30 48 26 48 20 C50 16 55 13 60 14 Z" fill="#e8562a" />
+        <ellipse cx="78" cy="30.6" rx="4" ry="2.4" fill="#1d1d1d" opacity="0.85" />
+        <ellipse cx="96" cy="26.6" rx="2.4" ry="1.6" fill="#1d1d1d" opacity="0.85" />
+        <ellipse cx="44" cy="23" rx="2.6" ry="1.8" fill="#1d1d1d" opacity="0.8" />
+      </g>
+      <g stroke="#b98a6a" strokeWidth="0.4" fill="none" opacity="0.45">
+        <path d="M96 14 q2 2 4 0 M88 13 q2 2 4 0 M80 13.4 q2 2 4 0 M72 14.4 q2 2 4 0 M64 15.6 q2 2 4 0 M56 17 q2 2 4 0" />
       </g>
       <path
         className="fish-pec"
-        d="M104 26 C99 27 95 30 94 34 C98 34.4 103 32 105.6 28.6 Z"
-        fill="#fb8500"
-        stroke="#161616"
-        strokeWidth="1"
+        d="M106 28.6 C100 31 95 35 92 39 C97 38.6 103 35.6 107 31 Z"
+        fill="#fff4ea"
+        fillOpacity="0.92"
+        stroke="#b98a6a"
+        strokeWidth="0.6"
       />
-      <circle cx="117.4" cy="17.4" r="4.2" fill="#fff" stroke="#161616" strokeWidth="0.9" />
-      <circle cx="118" cy="17.6" r="2.6" fill="#141414" />
-      <circle cx="118.9" cy="16.6" r="0.9" fill="#fff" />
-      <path d="M125.6 25 C124 26.4 122.4 26.8 121 26.4" stroke="#161616" strokeWidth="1" fill="none" strokeLinecap="round" />
+      <path d="M127.6 24.6 C125 26.6 122 27.4 119.4 27 M126 26.4 C125 30 123 32.6 120 34" stroke="#9c7a62" strokeWidth="0.75" fill="none" strokeLinecap="round" />
+      <circle cx="117.6" cy="17.6" r="3.2" fill="#fff" stroke="#6d5444" strokeWidth="0.7" />
+      <circle cx="118" cy="17.8" r="2" fill="#16100c" />
+      <circle cx="118.7" cy="17.1" r="0.7" fill="#fff" />
     </>
   ),
 
-  /** Pez globo inflado: redondo, con espinitas, panza blanca y boquita en trompa. */
-  globo: ({ id }) => {
-    const spikes = Array.from({ length: 22 }, (_, i) => {
-      const a = (i / 22) * Math.PI * 2;
-      const r1 = 19.4;
-      const r2 = 23.4;
-      const cx = 86;
-      const cy = 22;
-      const w = 0.09;
-      return `M${cx + Math.cos(a - w) * r1} ${cy + Math.sin(a - w) * r1} L${cx + Math.cos(a) * r2} ${cy + Math.sin(a) * r2} L${cx + Math.cos(a + w) * r1} ${cy + Math.sin(a + w) * r1} Z`;
-    }).join(' ');
-    return (
-      <>
-        <defs>
-          <radialGradient id={`${id}-b`} cx="0.45" cy="0.3" r="0.8">
-            <stop offset="0" stopColor="#fff6c7" />
-            <stop offset="0.45" stopColor="#f6d365" />
-            <stop offset="1" stopColor="#c99a2e" />
-          </radialGradient>
-        </defs>
-        <g className="fish-tail" style={{ transformOrigin: '67px 22px' }}>
-          <path
-            d="M67.6 19 C62 14 56 11.6 51 12 C52.6 16 53 19 52.6 22 C53 25 52.6 28 51 32 C56 32.4 62 30 67.6 25 Z"
-            fill="#f2c94c"
-            fillOpacity="0.85"
-            stroke="#7a5a14"
-            strokeWidth="0.8"
-            strokeLinejoin="round"
-          />
-        </g>
-        <path d={spikes} fill="#e2b33f" stroke="#7a5a14" strokeWidth="0.5" strokeLinejoin="round" />
-        <circle cx="86" cy="22" r="19.6" fill={`url(#${id}-b)`} stroke="#7a5a14" strokeWidth="1" />
-        <path d="M70 28 C76 39 96 41.6 104 31 C96 36 78 36 70 28 Z" fill="#fffdf2" opacity="0.9" />
-        <g fill="#8a6a1f" opacity="0.5">
-          <circle cx="78" cy="12" r="1.2" />
-          <circle cx="86" cy="9" r="1.3" />
-          <circle cx="73" cy="18" r="1.1" />
-          <circle cx="82" cy="16" r="1" />
-          <circle cx="92" cy="12.6" r="1" />
-        </g>
+  /** Tararira: cilíndrica, verde oliva con manchones oscuros, cabezota con dientes y cola redondeada. */
+  tararira: ({ id }) => (
+    <>
+      <defs>
+        <linearGradient id={`${id}-b`} x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0" stopColor="#3f4a2a" />
+          <stop offset="0.4" stopColor="#6d7a43" />
+          <stop offset="0.72" stopColor="#b5b580" />
+          <stop offset="1" stopColor="#e6e2c0" />
+        </linearGradient>
+        <clipPath id={`${id}-c`}>
+          <path d="M129 22 C128 15 121 10.6 110 9.6 C96 8.6 76 10 60 12.6 C50 14.2 42 16.4 34 18.6 L34 26.6 C42 28.6 50 30.6 60 32 C76 34.4 96 35.4 110 34.2 C121 33.2 128.4 28.6 129 22 Z" />
+        </clipPath>
+      </defs>
+      <g className="fish-tail">
         <path
-          className="fish-pec"
-          d="M90 26 C86 25 82 26.6 80.6 29.6 C84 30.6 88 29.6 90.6 27.4 Z"
-          fill="#f2c94c"
-          stroke="#7a5a14"
-          strokeWidth="0.6"
+          d="M36 18.4 C29 15 21 13.4 13 13.6 C8.6 16 7 19.4 7 22.6 C7 25.8 8.6 29 13 31.4 C21 31.6 29 30 36 26.6 Z"
+          fill="#6b7340"
+          stroke="#2c331a"
+          strokeWidth="0.8"
+          strokeLinejoin="round"
         />
-        <ellipse cx="106.4" cy="23.4" rx="2.4" ry="2" fill="#e8846b" stroke="#7a3d2c" strokeWidth="0.7" />
-        <circle cx="97" cy="16" r="5.2" fill="#fff" stroke="#7a5a14" strokeWidth="0.8" />
-        <circle cx="98.4" cy="16.4" r="3" fill="#141414" />
-        <circle cx="99.4" cy="15.2" r="1.05" fill="#fff" />
-      </>
-    );
-  },
+        <g fill="#2c331a" opacity="0.55">
+          <circle cx="16" cy="18" r="1.4" />
+          <circle cx="22" cy="23" r="1.6" />
+          <circle cx="15" cy="27" r="1.3" />
+          <circle cx="27" cy="19" r="1.1" />
+        </g>
+      </g>
+      <g fill="#7b8549" stroke="#2c331a" strokeWidth="0.7" strokeLinejoin="round">
+        <path className="fish-dorsal" d="M86 10.4 C84 5 78 2.6 70 3 C67 6 65.6 9 66 12 Z" />
+        <path d="M58 31.6 C56.6 35.6 53.4 38.6 49.6 39.6 C48 37.4 47.4 34.4 47.6 31 Z" />
+        <path d="M80 33.8 C79 37 77 39 74 40 C73 38 72.6 35.6 73 33.6 Z" />
+      </g>
+      <path
+        d="M129 22 C128 15 121 10.6 110 9.6 C96 8.6 76 10 60 12.6 C50 14.2 42 16.4 34 18.6 L34 26.6 C42 28.6 50 30.6 60 32 C76 34.4 96 35.4 110 34.2 C121 33.2 128.4 28.6 129 22 Z"
+        fill={`url(#${id}-b)`}
+        stroke="#2c331a"
+        strokeWidth="1"
+      />
+      <g clipPath={`url(#${id}-c)`} fill="#262c16" opacity="0.6">
+        <path d="M40 15 C44 18 44 24 40 28 C37 25 37 19 40 15 Z" />
+        <path d="M52 13 C57 17 57 25 52 30 C49 26 49 18 52 13 Z" />
+        <path d="M66 11 C71 15 71 24 66 30 C63 25 63 17 66 11 Z" />
+        <path d="M80 10 C85 14 85 23 80 29 C77 24 77 16 80 10 Z" />
+        <path d="M94 10 C98 14 98 21 94 26 C91 22 91 15 94 10 Z" />
+      </g>
+      <path d="M110 10.4 C104.6 16 104.6 27 111 33.6" stroke="#2c331a" strokeWidth="1" fill="none" />
+      <path
+        className="fish-pec"
+        d="M106 27.6 C101 29.6 96.6 32 93.4 32.6 C96.4 30.4 100.4 28.4 104.6 26.8 Z"
+        fill="#8a9354"
+        stroke="#2c331a"
+        strokeWidth="0.5"
+      />
+      <path d="M129 23.2 C124 25.6 118 26.6 112 26" stroke="#1d2210" strokeWidth="1.2" fill="none" strokeLinecap="round" />
+      <path d="M127 24 L126.2 25.6 M124.4 25 L123.6 26.6 M121.8 25.6 L121.2 27.2 M119 26 L118.6 27.4" stroke="#fff" strokeWidth="0.7" strokeLinecap="round" />
+      <circle cx="120" cy="17.2" r="3" fill="#e9d36a" stroke="#2c331a" strokeWidth="0.7" />
+      <circle cx="120.3" cy="17.4" r="1.8" fill="#141708" />
+      <circle cx="120.9" cy="16.7" r="0.6" fill="#fff" />
+    </>
+  ),
 };

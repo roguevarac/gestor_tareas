@@ -17,7 +17,7 @@ import {
   where,
   writeBatch,
 } from 'firebase/firestore';
-import type { Backend, Profile, SharedDoc } from './types';
+import type { Backend, Board, Ping, Profile, SharedDoc } from './types';
 
 /** Lee un documento; si las reglas no dejan (no es mío / no existe), cuenta como que no está. */
 async function exists(get: () => Promise<{ exists(): boolean }>): Promise<boolean> {
@@ -80,17 +80,44 @@ export function createFirebaseBackend(config: Record<string, string>): Backend {
           cb(
             snap.docs.map((d): Profile => {
               const v = d.data();
-              return { uid: d.id, name: v.name ?? '', email: v.email ?? '' };
+              return { uid: d.id, name: v.name ?? '', email: v.email ?? '', supervisor: v.supervisor === true };
             }),
           ),
         onError,
       );
     },
     async addMember(m) {
-      const ref = await addDoc(members, { name: m.name, email: m.email, createdAt: Date.now() });
+      const ref = await addDoc(members, {
+        name: m.name,
+        email: m.email,
+        supervisor: !!m.supervisor,
+        createdAt: Date.now(),
+      });
       return ref.id;
     },
-    updateMember: (id, m) => updateDoc(doc(db, 'members', id), { name: m.name, email: m.email }),
+    updateMember: (id, m) =>
+      updateDoc(doc(db, 'members', id), { name: m.name, email: m.email, supervisor: !!m.supervisor }),
+    saveBoard: (b) => setDoc(doc(db, 'boards', b.memberId), b),
+    watchBoards(cb, onError) {
+      return onSnapshot(
+        collection(db, 'boards'),
+        (snap) => cb(snap.docs.map((d) => ({ ...(d.data() as Board), memberId: d.id }))),
+        onError,
+      );
+    },
+    async sendPing(p) {
+      const ref = await addDoc(collection(db, 'pings'), p);
+      return ref.id;
+    },
+    answerPing: (id, answer) => updateDoc(doc(db, 'pings', id), { answer, answeredAt: Date.now() }),
+    removePing: (id) => deleteDoc(doc(db, 'pings', id)),
+    watchPings(field, memberId, cb, onError) {
+      return onSnapshot(
+        query(collection(db, 'pings'), where(field, '==', memberId)),
+        (snap) => cb(snap.docs.map((d) => ({ ...(d.data() as Omit<Ping, 'id'>), id: d.id }))),
+        onError,
+      );
+    },
     removeMember: (id) => deleteDoc(doc(db, 'members', id)),
     watchShared(memberId, cb, onError) {
       return onSnapshot(

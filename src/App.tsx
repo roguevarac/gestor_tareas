@@ -17,6 +17,9 @@ import { LaunchedFish, SendFishDialog } from './components/SendFishDialog';
 import { IncomingFish } from './components/IncomingFish';
 import { Pecera } from './components/Pecera';
 import { InstallBanner } from './components/InstallBanner';
+import { TeamBoard } from './components/TeamBoard';
+import { FishingRod } from './components/FishingRod';
+import { Bait } from './components/Bait';
 
 export default function App() {
   useEffect(() => syncAcrossTabs(), []);
@@ -46,6 +49,9 @@ export default function App() {
       <Pecera />
       <IncomingFish />
       <LaunchedFish />
+      <TeamBoard />
+      <FishingRod />
+      <Bait />
       <Toasts />
     </>
   );

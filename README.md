@@ -42,16 +42,27 @@ Es para un equipo de trabajo, sin cuentas ni contraseñas:
 Después:
 
 - **Compartir con… / Mandar un pez**: elegís la tarea (nueva, o una tuya desde su detalle), a quién, el pez
-  (mojarrita = algo rápido, dorado = importante, surubí = algo grande, pez payaso = un favorcito, pez globo = ¡urgente!)
+  (todos de agua dulce: mojarrita = algo rápido, dorado = importante, surubí = algo grande, koi = un favorcito, tararira = ¡urgente!)
   y unas palabras si querés.
   - **Que la haga**: la tarea pasa a ser solo de la otra persona. Si se la mandás a varias, le llega una a cada una.
     Cuando la tira al balde, te llega el aviso.
   - **La hacemos juntos**: proyecto conjunto que ven todos. Cada subtarea tiene su responsable (el circulito con las
     iniciales; tocándolo se cambia) y cualquiera puede tildar. Cuando alguien lo tira al balde, se termina para todos.
+  - Un proyecto "que la haga" para varias personas puede llevar un responsable por subtarea: les llega un solo
+    proyecto a todos (sin responsables, a cada uno le llega su copia).
 - **Recibir**: el pez llega nadando con la tarea. *Aceptar* la pone en tu lista, *No la tomo* le avisa a quien la
   mandó (y la puede recuperar), *Después* la deja esperando en la pecera.
 
-Tus tareas personales siguen guardadas solo en tu navegador. Las compartidas se guardan en Firebase (de Google).
+**Tablero y caña (supervisión).** En Pecera → Equipo, quien administra le da **Tablero** a alguien (por ejemplo,
+José). Esa persona ve:
+
+- **Tablero**: las tareas abiertas de cada uno (sin notas ni mails) y lo que terminó en el día.
+- **La caña**, al costado de la pantalla: elige a alguien y le tira la caña. A esa persona le baja la carnada con
+  “¿En qué andás?” y contesta con un toque (sus tareas, “En una reunión”…) o con unas palabras.
+
+Cada persona ve en su Pecera quién puede ver sus tareas.
+
+Tus tareas personales se guardan en tu navegador (y, si estás en el equipo, se publica un resumen para el tablero). Las compartidas se guardan en Firebase (de Google).
 Ojo: como no hay contraseñas, cualquiera que tenga el link puede elegir un nombre de la lista; es para usar entre
 gente de confianza. Modo de prueba sin Firebase: abrir la app con `?demo=ana` en una pestaña y `?demo=juan` en otra.
 
@@ -138,6 +149,12 @@ Source: GitHub Actions**. En repos privados, GitHub Pages necesita un plan pago 
 `dist/` se puede subir a cualquier hosting estático (Netlify, Cloudflare Pages, un servidor interno…).
 
 ## Cambios
+
+### 1.5
+
+- Peces de agua dulce: se van el pez payaso y el pez globo; llegan el koi y la tararira.
+- Proyectos "que la haga" para varias personas con responsable por subtarea.
+- Tablero del equipo y caña de pescar (“¿En qué andás?”) para quien supervisa.
 
 ### 1.4
 

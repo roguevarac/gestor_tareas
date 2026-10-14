@@ -15,7 +15,7 @@ export function TeamModal() {
       <div className="auth">
         <div className="auth-hero" aria-hidden="true">
           <SpeciesFish kind="dorado" width={84} />
-          <SpeciesFish kind="payaso" width={70} />
+          <SpeciesFish kind="koi" width={70} />
           <SpeciesFish kind="mojarrita" width={80} />
         </div>
         {status === 'setup' ? <SetupForm /> : <ChooseForm />}

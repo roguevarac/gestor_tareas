@@ -50,6 +50,7 @@ function IncomingCard({
   const from = doc.names[doc.from] ?? 'Alguien';
   const says = SPECIES.find((s) => s.kind === doc.fish)?.says;
   const joint = doc.mode === 'joint';
+  const team = joint || doc.participants.length > 2;
   const others = doc.participants.filter((u) => u !== me && u !== doc.from);
   const mine = doc.subtasks.filter((s) => s.assignee === me).length;
 
@@ -102,9 +103,11 @@ function IncomingCard({
               ? `Proyecto conjunto con ${firstName(from)} y ${others.map((u) => firstName(doc.names[u] ?? '')).join(', ')}`
               : `Proyecto conjunto con ${firstName(from)}`
             : doc.kind === 'project'
-              ? 'Proyecto para vos'
+              ? others.length
+                ? `Proyecto para vos y ${others.map((u) => firstName(doc.names[u] ?? '')).join(', ')}`
+                : 'Proyecto para vos'
               : 'Tarea para vos'}
-          {joint && mine > 0 && ` · ${mine} ${mine === 1 ? 'subtarea es tuya' : 'subtareas son tuyas'}`}
+          {team && mine > 0 && ` · ${mine} ${mine === 1 ? 'subtarea es tuya' : 'subtareas son tuyas'}`}
         </p>
         {doc.message && <blockquote className="incoming-message">“{doc.message}”</blockquote>}
         {doc.subtasks.length > 0 && (
@@ -113,7 +116,7 @@ function IncomingCard({
               <li key={s.id} className={s.assignee === me ? 'is-mine' : ''}>
                 <span className="incoming-sub-dot" />
                 <span>{s.title}</span>
-                {joint && s.assignee && (
+                {team && s.assignee && (
                   <small>{s.assignee === me ? 'vos' : firstName(doc.names[s.assignee] ?? '')}</small>
                 )}
               </li>

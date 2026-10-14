@@ -84,6 +84,9 @@ function SendForm() {
     setSubs((ss) => ss.map((s) => (s.assignee && !people.some((p) => p.uid === s.assignee) ? { ...s, assignee: null } : s)));
   }, [people]);
 
+  const canAssign = mode === 'joint' || to.length > 1;
+  const assignees = mode === 'joint' ? people : people.filter((p) => p.uid !== me.uid);
+
   const toggle = (uid: string) => setTo((t) => (t.includes(uid) ? t.filter((x) => x !== uid) : [...t, uid]));
   const addSub = () => {
     if (!subDraft.trim()) return;
@@ -199,7 +202,10 @@ function SendForm() {
             onClick={() => setMode('assigned')}
           >
             <strong>Que la haga</strong>
-            <span>Pasa a ser {to.length > 1 ? 'de cada una (le llega una a cada persona)' : 'solo suya'}. Te avisa cuando la termina.</span>
+            <span>
+              {to.length > 1 ? 'Pasa a ser de ellos: vos no participás.' : 'Pasa a ser solo suya.'} Te avisa cuando la
+              termina.
+            </span>
           </button>
           <button
             type="button"
@@ -231,7 +237,7 @@ function SendForm() {
                 {subs.map((s) => (
                   <motion.li key={s.key} initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} exit={{ opacity: 0, height: 0 }}>
                     <span className="send-sub-title">{s.title}</span>
-                    {mode === 'joint' && (
+                    {canAssign && (
                       <select
                         className="send-sub-who"
                         value={s.assignee ?? ''}
@@ -241,7 +247,7 @@ function SendForm() {
                         }
                       >
                         <option value="">Sin responsable</option>
-                        {people.map((p) => (
+                        {assignees.map((p) => (
                           <option key={p.uid} value={p.uid}>
                             {p.uid === me.uid ? `${p.name} (yo)` : p.name}
                           </option>
@@ -272,6 +278,16 @@ function SendForm() {
             </form>
             {mode === 'joint' && to.length === 0 && subs.length > 0 && (
               <p className="hint">Elegí a quién se la mandás para poder asignarle subtareas.</p>
+            )}
+            {mode === 'assigned' && to.length === 1 && subs.length > 0 && (
+              <p className="hint">Si se lo mandás a varias personas, podés elegir quién hace cada subtarea.</p>
+            )}
+            {mode === 'assigned' && to.length > 1 && (
+              <p className="hint">
+                {subs.some((x) => x.assignee)
+                  ? 'Les llega un solo proyecto a todos, con cada subtarea a su responsable.'
+                  : 'Sin responsables, a cada persona le llega su propia copia. Elegí responsables para que sea un solo proyecto.'}
+              </p>
             )}
           </div>
         )}

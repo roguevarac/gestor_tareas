@@ -94,6 +94,8 @@ function writeJSON(key: string, value: unknown) {
 }
 
 let backend: Backend | null = null;
+/** El servidor en uso (null si no hay). */
+export const getBackend = () => backend;
 let unwatchShared: (() => void) | null = null;
 let started = false;
 
@@ -127,6 +129,7 @@ export async function startSharing(): Promise<void> {
     return;
   }
   set({ status: 'loading', backendKind: backend.kind });
+  void import('./supervision').then((m) => m.startSupervision());
   let watchingMembers = false;
   backend.start(
     (deviceId) => {
@@ -353,9 +356,9 @@ export const team = {
     if (!backend || !name.trim()) return;
     await wrap(() => backend!.addMember({ name: name.trim(), email: email.trim() }), 'No pude sumarlo');
   },
-  async update(id: string, name: string, email: string) {
+  async update(id: string, name: string, email: string, supervisor = false) {
     if (!backend || !name.trim()) return;
-    await backend.updateMember(id, { name: name.trim(), email: email.trim() }).catch(fail);
+    await backend.updateMember(id, { name: name.trim(), email: email.trim(), supervisor }).catch(fail);
   },
   async remove(id: string) {
     if (!backend) return;

@@ -17,7 +17,7 @@ import { Modal } from './Modal';
 import { SpeciesFish } from './Fishes';
 import { Avatar } from './Avatar';
 import { EditableText } from './EditableText';
-import { IconCopy, IconLogout, IconPlus, IconSend, IconX } from './Icons';
+import { IconCopy, IconEye, IconLogout, IconPlus, IconSend, IconX } from './Icons';
 import { copyText } from './MailLinks';
 import { APP_URL } from './SendFishDialog';
 
@@ -27,6 +27,8 @@ export function Pecera() {
   const me = useShared((s) => s.me);
   const backendKind = useShared((s) => s.backendKind);
   const isAdmin = useShared((s) => s.isAdmin);
+  const users = useShared((s) => s.users);
+  const watchers = users.filter((u) => u.supervisor && u.uid !== me?.uid);
   const incoming = useIncoming();
   const sent = useSent();
   const toast = useUI((s) => s.toast);
@@ -54,6 +56,12 @@ export function Pecera() {
                 {me.email}
                 {backendKind === 'demo' ? ' · modo prueba' : ''}
               </small>
+              {watchers.length > 0 && (
+                <small className="pecera-watchers">
+                  Tus tareas abiertas y lo que terminás en el día las ve{watchers.length > 1 ? 'n' : ''}:{' '}
+                  {watchers.map((w) => firstName(w.name)).join(', ')}
+                </small>
+              )}
             </div>
             <button
               type="button"
@@ -249,17 +257,30 @@ function TeamSection() {
             <div className="team-main">
               <EditableText
                 value={m.name}
-                onSave={(v) => v.trim() && void team.update(m.uid, v, m.email)}
+                onSave={(v) => v.trim() && void team.update(m.uid, v, m.email, m.supervisor)}
                 className="team-name"
                 ariaLabel={`Nombre de ${m.name}`}
               />
               <EditableText
                 value={m.email || 'agregar mail'}
-                onSave={(v) => void team.update(m.uid, m.name, v === 'agregar mail' ? '' : v)}
+                onSave={(v) => void team.update(m.uid, m.name, v === 'agregar mail' ? '' : v, m.supervisor)}
                 className={`team-email ${m.email ? '' : 'is-empty'}`}
                 ariaLabel={`Mail de ${m.name}`}
               />
             </div>
+            <button
+              type="button"
+              className={`sup-toggle ${m.supervisor ? 'is-on' : ''}`}
+              aria-pressed={!!m.supervisor}
+              onClick={() => void team.update(m.uid, m.name, m.email, !m.supervisor)}
+              title={
+                m.supervisor
+                  ? 'Ve el tablero del equipo y usa la caña. Tocá para sacárselo.'
+                  : 'Darle el tablero del equipo y la caña ("¿En qué andás?")'
+              }
+            >
+              <IconEye size={15} /> {m.supervisor ? 'Ve el tablero' : 'Tablero'}
+            </button>
             {m.uid === memberId ? (
               <span className="tag">vos</span>
             ) : confirm === m.uid ? (
@@ -305,7 +326,10 @@ function TeamSection() {
           <IconPlus size={16} /> Sumar
         </button>
       </form>
-      <p className="hint muted">Cada persona abre la app, toca Compartir y elige su nombre.</p>
+      <p className="hint muted">
+        Cada persona abre la app, toca Compartir y elige su nombre. Con <strong>Tablero</strong> le das a alguien la
+        vista de las tareas de todos y la caña para preguntar “¿En qué andás?”.
+      </p>
     </section>
   );
 }

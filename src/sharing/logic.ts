@@ -30,6 +30,10 @@ export function firstName(name: string): string {
   return name.trim().split(/\s+/)[0] || name;
 }
 
+/** ¿Se reparte entre varias personas (y cada subtarea puede tener responsable)? */
+export const isTeamDoc = (d: Pick<SharedDoc, 'mode' | 'participants'>) =>
+  d.mode === 'joint' || d.participants.length > 2;
+
 /** Documento compartido → la tarea que dibujan las tarjetas. */
 export function toTask(d: SharedDoc, me: string, collapsed = false): Task {
   return {
@@ -94,7 +98,9 @@ export function buildDocs(
       invites[p.uid] = 'pending';
       names[p.uid] = p.name;
     }
-    const allowed = new Set([me.uid, ...people.map((p) => p.uid)]);
+    // En las conjuntas puede ser responsable cualquiera (yo incluido); en "que la haga" solo quienes la reciben.
+    const allowed = new Set([...(input.mode === 'joint' ? [me.uid] : []), ...people.map((p) => p.uid)]);
+    const assignable = input.mode === 'joint' || people.length > 1;
     return {
       mode: input.mode,
       kind: input.mode === 'joint' ? 'project' : input.kind,
@@ -115,8 +121,7 @@ export function buildDocs(
             title: s.title.trim(),
             done: !!s.done,
             doneAt: s.done ? now : null,
-            assignee:
-              input.mode === 'joint' && s.assignee && allowed.has(s.assignee) ? s.assignee : null,
+            assignee: assignable && s.assignee && allowed.has(s.assignee) ? s.assignee : null,
             doneBy: null,
           }),
         ),
@@ -129,6 +134,8 @@ export function buildDocs(
     };
   };
   if (input.mode === 'joint') return [base(to)];
+  // "Que la haga" un proyecto entre varias personas, con responsable por subtarea: un solo proyecto para todas.
+  if (input.kind === 'project' && to.length > 1 && input.subtasks?.some((s) => s.assignee)) return [base(to)];
   return to.map((p) => base([p]));
 }
 
@@ -200,7 +207,8 @@ export function eventsFor(docs: SharedDoc[], me: string): SharedEvent[] {
 
 /** Proyecto conjunto que terminó otra persona: entra también a mi bitácora. */
 export function needsLogEntry(d: SharedDoc, me: string, log: LogEntry[]): boolean {
-  if (d.state !== 'done' || d.mode !== 'joint' || !d.doneBy || d.doneBy === me) return false;
+  const team = d.mode === 'joint' || d.participants.length > 2;
+  if (d.state !== 'done' || !team || !d.doneBy || d.doneBy === me) return false;
   if (!isVisibleTo({ ...d, state: 'open' }, me)) return false;
   return !log.some((e) => e.task.id === d.id && e.completedAt === d.doneAt);
 }

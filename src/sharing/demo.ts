@@ -1,4 +1,4 @@
-import type { Backend, Profile, SharedDoc } from './types';
+import type { Backend, Board, Ping, Profile, SharedDoc } from './types';
 import { applyPatch as apply } from './logic';
 import { uid as newId } from '../lib/id';
 
@@ -15,16 +15,29 @@ interface DB {
   claims: Record<string, string>;
   members: Record<string, Omit<Profile, 'uid'>>;
   shared: Record<string, Omit<SharedDoc, 'id'>>;
+  boards: Record<string, Board>;
+  pings: Record<string, Omit<Ping, 'id'>>;
 }
 
 function load(): DB {
   try {
     const raw = localStorage.getItem(KEY);
-    if (raw) return { admins: {}, claims: {}, members: {}, shared: {}, setup: false, adminCode: null, ...JSON.parse(raw) };
+    if (raw)
+      return {
+        admins: {},
+        claims: {},
+        members: {},
+        shared: {},
+        boards: {},
+        pings: {},
+        setup: false,
+        adminCode: null,
+        ...JSON.parse(raw),
+      };
   } catch {
     /* vacío */
   }
-  return { setup: false, adminCode: null, admins: {}, claims: {}, members: {}, shared: {} };
+  return { setup: false, adminCode: null, admins: {}, claims: {}, members: {}, shared: {}, boards: {}, pings: {} };
 }
 
 const listeners = new Set<() => void>();
@@ -101,15 +114,59 @@ export function createDemoBackend(handle: string): Backend {
       const db = load();
       if (!isAdmin(db)) throw denied();
       const id = newId();
-      db.members[id] = { name: m.name, email: m.email };
+      db.members[id] = { name: m.name, email: m.email, supervisor: !!m.supervisor };
       save(db);
       return id;
     },
     async updateMember(id, m) {
       const db = load();
       if (!isAdmin(db)) throw denied();
-      db.members[id] = { name: m.name, email: m.email };
+      db.members[id] = { name: m.name, email: m.email, supervisor: !!m.supervisor };
       save(db);
+    },
+    async saveBoard(b) {
+      const db = load();
+      db.boards[b.memberId] = JSON.parse(JSON.stringify(b));
+      save(db);
+    },
+    watchBoards(cb) {
+      return subscribe(() => {
+        const db = load();
+        const mine = db.claims[device];
+        if (!mine || !db.members[mine]?.supervisor) return cb([]);
+        cb(Object.values(db.boards));
+      });
+    },
+    async sendPing(p) {
+      await delay();
+      const db = load();
+      const mine = db.claims[device];
+      if (!mine || !db.members[mine]?.supervisor) throw denied();
+      const id = newId();
+      db.pings[id] = { ...p };
+      save(db);
+      return id;
+    },
+    async answerPing(id, answer) {
+      await delay();
+      const db = load();
+      if (!db.pings[id]) throw notFound();
+      db.pings[id] = { ...db.pings[id], answer, answeredAt: Date.now() };
+      save(db);
+    },
+    async removePing(id) {
+      const db = load();
+      delete db.pings[id];
+      save(db);
+    },
+    watchPings(field, memberId, cb) {
+      return subscribe(() =>
+        cb(
+          Object.entries(load().pings)
+            .filter(([, p]) => p[field] === memberId)
+            .map(([id, p]) => ({ ...p, id })),
+        ),
+      );
     },
     async removeMember(id) {
       const db = load();

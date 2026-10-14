@@ -15,6 +15,11 @@ service cloud.firestore {
         && exists(/databases/$(database)/documents/members/$(me()));
     }
     function isAdmin() { return signedIn() && exists(/databases/$(database)/documents/admins/$(request.auth.uid)); }
+    // Ve el tablero del equipo y usa la caña.
+    function isSupervisor() {
+      return isMember()
+        && get(/databases/$(database)/documents/members/$(me())).data.get('supervisor', false) == true;
+    }
     function isAdminAfter() {
       return signedIn() && existsAfter(/databases/$(database)/documents/admins/$(request.auth.uid));
     }
@@ -52,7 +57,8 @@ service cloud.firestore {
     match /members/{id} {
       allow read: if signedIn();
       allow create, update: if isAdminAfter()
-        && request.resource.data.keys().hasOnly(['name', 'email', 'createdAt'])
+        && request.resource.data.keys().hasOnly(['name', 'email', 'createdAt', 'supervisor'])
+        && request.resource.data.get('supervisor', false) is bool
         && request.resource.data.name is string
         && request.resource.data.name.size() > 0
         && request.resource.data.name.size() <= 80
@@ -69,6 +75,30 @@ service cloud.firestore {
         && request.resource.data.memberId is string
         && existsAfter(/databases/$(database)/documents/members/$(request.resource.data.memberId));
       allow delete: if signedIn() && request.auth.uid == uid;
+    }
+
+    // Tablero: cada uno publica lo que tiene en el agua; lo ve quien supervisa.
+    match /boards/{memberId} {
+      allow read: if isSupervisor();
+      allow create, update: if isMember() && me() == memberId
+        && request.resource.data.memberId == memberId;
+      allow delete: if isMember() && me() == memberId;
+    }
+
+    // La caña: "¿En qué andás?". La tira quien supervisa; contesta solo a quien le llegó.
+    match /pings/{id} {
+      allow read: if isMember();
+      allow create: if isSupervisor()
+        && request.resource.data.from == me()
+        && request.resource.data.keys().hasOnly(
+          ['from', 'to', 'fromName', 'toName', 'question', 'createdAt', 'answer', 'answeredAt'])
+        && request.resource.data.to is string
+        && request.resource.data.answer == null;
+      allow update: if isMember() && resource.data.to == me()
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['answer', 'answeredAt'])
+        && request.resource.data.answer is string
+        && request.resource.data.answer.size() <= 280;
+      allow delete: if isMember() && (resource.data.from == me() || resource.data.to == me());
     }
 
     // Tareas compartidas.

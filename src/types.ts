@@ -20,7 +20,8 @@ export interface Subtask {
 }
 
 /** Especies de pez que se pueden mandar. */
-export type FishKind = 'mojarrita' | 'dorado' | 'surubi' | 'payaso' | 'globo';
+/** (pez payaso y pez globo eran de versiones anteriores: se ven como mojarrita) */
+export type FishKind = 'mojarrita' | 'dorado' | 'surubi' | 'koi' | 'tararira' | 'payaso' | 'globo';
 
 /**
  * Datos de una tarea compartida (vive en el servidor, no en este navegador).

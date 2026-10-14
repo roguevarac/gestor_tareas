@@ -8,6 +8,40 @@ export interface Profile {
   name: string;
   email: string;
   photoURL?: string | null;
+  /** Puede ver el tablero del equipo y usar la caña ("¿En qué andás?"). */
+  supervisor?: boolean;
+}
+
+/** Lo que cada persona tiene en el agua, para el tablero del equipo (sin notas ni mails). */
+export interface BoardTask {
+  id: string;
+  title: string;
+  kind: TaskKind;
+  createdAt: number;
+  /** Compartida: conjunta o mandada por alguien. */
+  shared?: 'joint' | 'assigned' | null;
+  from?: string | null;
+  subtasks: { title: string; done: boolean; assignee?: string | null }[];
+}
+
+export interface Board {
+  memberId: string;
+  tasks: BoardTask[];
+  doneToday: { title: string; completedAt: number; minutes: number | null }[];
+  updatedAt: number;
+}
+
+/** "¿En qué andás?": la pregunta que baja como carnada y su respuesta. */
+export interface Ping {
+  id: string;
+  from: string;
+  to: string;
+  fromName: string;
+  toName: string;
+  question: string;
+  createdAt: number;
+  answer: string | null;
+  answeredAt: number | null;
 }
 
 export interface SharedSubtask {
@@ -70,8 +104,14 @@ export interface Backend {
   unclaim(deviceId: string): Promise<void>;
   becomeAdmin(deviceId: string, code: string): Promise<void>;
   watchMembers(cb: (members: Profile[]) => void, onError: (e: unknown) => void): () => void;
-  addMember(m: { name: string; email: string }): Promise<string>;
-  updateMember(id: string, m: { name: string; email: string }): Promise<void>;
+  addMember(m: { name: string; email: string; supervisor?: boolean }): Promise<string>;
+  updateMember(id: string, m: { name: string; email: string; supervisor?: boolean }): Promise<void>;
+  saveBoard(board: Board): Promise<void>;
+  watchBoards(cb: (boards: Board[]) => void, onError: (e: unknown) => void): () => void;
+  sendPing(p: Omit<Ping, 'id'>): Promise<string>;
+  answerPing(id: string, answer: string): Promise<void>;
+  removePing(id: string): Promise<void>;
+  watchPings(field: 'to' | 'from', memberId: string, cb: (pings: Ping[]) => void, onError: (e: unknown) => void): () => void;
   removeMember(id: string): Promise<void>;
   watchShared(memberId: string, cb: (docs: SharedDoc[]) => void, onError: (e: unknown) => void): () => void;
   create(doc: NewSharedDoc): Promise<string>;

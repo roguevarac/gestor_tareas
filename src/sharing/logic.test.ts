@@ -41,7 +41,7 @@ describe('buildDocs', () => {
         kind: 'quick',
         title: 'Web',
         tone: 0,
-        fish: 'globo',
+        fish: 'tararira',
         subtasks: [
           { title: 'Textos', assignee: 'ana' },
           { title: 'Fotos', assignee: 'juan' },
@@ -58,9 +58,47 @@ describe('buildDocs', () => {
   });
 });
 
+describe('proyecto "que la haga" entre varios', () => {
+  it('con responsables: un solo proyecto para todos los que la reciben', () => {
+    const docs = buildDocs(
+      {
+        mode: 'assigned',
+        kind: 'project',
+        title: 'Cierre',
+        tone: 0,
+        fish: 'koi',
+        subtasks: [
+          { title: 'A', assignee: 'juan' },
+          { title: 'B', assignee: 'sofi' },
+          { title: 'C', assignee: 'ana' },
+        ],
+      },
+      ana,
+      [juan, sofi],
+    );
+    expect(docs).toHaveLength(1);
+    expect(docs[0].participants).toEqual(['ana', 'juan', 'sofi']);
+    // quien la manda no es responsable en "que la haga"
+    expect(docs[0].subtasks.map((s) => s.assignee)).toEqual(['juan', 'sofi', null]);
+    const d = applyPatch(asDoc(docs[0]), { 'invites.juan': 'accepted', 'invites.sofi': 'accepted' });
+    expect(isVisibleTo(d, 'juan')).toBe(true);
+    expect(isVisibleTo(d, 'ana')).toBe(false);
+    expect(toTask(d, 'juan').shared?.people.map((p) => p.uid)).toEqual(['juan', 'sofi']);
+  });
+
+  it('sin responsables: a cada uno le llega su copia', () => {
+    const docs = buildDocs(
+      { mode: 'assigned', kind: 'project', title: 'X', tone: 0, fish: 'koi', subtasks: [{ title: 'A' }] },
+      ana,
+      [juan, sofi],
+    );
+    expect(docs).toHaveLength(2);
+  });
+});
+
 describe('visibilidad', () => {
   const [joint] = buildDocs({ mode: 'joint', kind: 'project', title: 'P', tone: 0, fish: 'surubi' }, ana, [juan]);
-  const [assigned] = buildDocs({ mode: 'assigned', kind: 'quick', title: 'Q', tone: 0, fish: 'payaso' }, ana, [juan]);
+  const [assigned] = buildDocs({ mode: 'assigned', kind: 'quick', title: 'Q', tone: 0, fish: 'koi' }, ana, [juan]);
 
   it('la conjunta la ve quien la armó; el invitado recién al aceptar', () => {
     const d = asDoc(joint);
