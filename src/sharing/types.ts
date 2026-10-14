@@ -10,6 +10,8 @@ export interface Profile {
   photoURL?: string | null;
   /** Puede ver el tablero del equipo y usar la caña ("¿En qué andás?"). */
   supervisor?: boolean;
+  /** Ya tiene contraseña para entrar. */
+  hasPassword?: boolean;
 }
 
 /** Lo que cada persona tiene en el agua, para el tablero del equipo (sin notas ni mails). */
@@ -99,12 +101,24 @@ export interface Backend {
   start(cb: (deviceId: string | null) => void, onError: (e: unknown) => void): void;
   readTeam(deviceId: string): Promise<TeamState>;
   /** Primera vez: arma el equipo con quien lo administra. Devuelve su id de persona. */
-  setupTeam(deviceId: string, me: { name: string; email: string }, adminCode: string): Promise<string>;
-  claim(deviceId: string, memberId: string): Promise<void>;
+  /** `password` es también la clave para administrar; `hashFor` arma el hash de la contraseña de la persona. */
+  setupTeam(
+    deviceId: string,
+    me: { name: string; email: string },
+    password: string,
+    hashFor: (memberId: string) => Promise<string>,
+  ): Promise<string>;
+  /** Entrar como esa persona: `hash` = hash de su contraseña. */
+  claim(deviceId: string, memberId: string, hash: string): Promise<void>;
   unclaim(deviceId: string): Promise<void>;
   becomeAdmin(deviceId: string, code: string): Promise<void>;
   watchMembers(cb: (members: Profile[]) => void, onError: (e: unknown) => void): () => void;
-  addMember(m: { name: string; email: string; supervisor?: boolean }): Promise<string>;
+  addMember(
+    m: { name: string; email: string; supervisor?: boolean },
+    hashFor: (memberId: string) => Promise<string>,
+  ): Promise<string>;
+  /** Cambiar la contraseña (quien administra, o la persona misma). */
+  setPassword(memberId: string, hash: string, byAdmin: boolean): Promise<void>;
   updateMember(id: string, m: { name: string; email: string; supervisor?: boolean }): Promise<void>;
   saveBoard(board: Board): Promise<void>;
   watchBoards(cb: (boards: Board[]) => void, onError: (e: unknown) => void): () => void;

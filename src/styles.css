@@ -3259,7 +3259,7 @@ textarea.log-comment {
 
 .team-add {
   display: grid;
-  grid-template-columns: 1fr 1fr auto;
+  grid-template-columns: 1fr 1fr;
   gap: 6px;
   margin-top: 10px;
 }
@@ -3348,10 +3348,53 @@ textarea.log-comment {
   color: var(--accent-ink);
 }
 
-.pecera-watchers {
+.pecera-pw {
+  align-self: flex-start;
   margin-top: 2px;
-  white-space: normal !important;
-  color: var(--accent-ink) !important;
+  font-size: 0.78rem;
+}
+
+.team-item {
+  border-radius: 12px;
+  background: var(--surface-2);
+}
+
+.team-item .team-row {
+  background: transparent;
+}
+
+.team-nopw {
+  color: var(--danger);
+  font-weight: 750;
+  font-size: 0.75rem;
+}
+
+.team-key.is-missing {
+  color: var(--danger);
+  background: #fbe9e7;
+}
+
+.pw-form {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  padding: 0 8px 8px;
+}
+
+.pecera-me .pw-form {
+  padding: 6px 0 0;
+}
+
+.pw-form .input {
+  flex: 1;
+  min-width: 160px;
+  height: 36px;
+}
+
+.pw-form .hint {
+  width: 100%;
+  margin: 0;
 }
 
 /* Tablero del equipo */
@@ -3870,5 +3913,15 @@ textarea.log-comment {
 
   .bait-form {
     flex-direction: column;
+  }
+}
+
+.team-add .btn {
+  grid-column: span 2;
+}
+
+@media (max-width: 640px) {
+  .team-add .btn {
+    grid-column: auto;
   }
 }

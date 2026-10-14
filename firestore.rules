@@ -1,7 +1,7 @@
 rules_version = '2';
 
-// Reglas de Mis tareas (modo equipo, sin cuentas).
-// Cada navegador entra como "anónimo" y elige quién es de la lista del equipo.
+// Reglas de Mis tareas (modo equipo).
+// Cada navegador entra como "anónimo", elige quién es de la lista del equipo y pone su contraseña.
 // Solo quien administra (con su clave) puede sumar o sacar gente.
 // Publicar con: firebase deploy --only firestore:rules
 service cloud.firestore {
@@ -57,8 +57,9 @@ service cloud.firestore {
     match /members/{id} {
       allow read: if signedIn();
       allow create, update: if isAdminAfter()
-        && request.resource.data.keys().hasOnly(['name', 'email', 'createdAt', 'supervisor'])
+        && request.resource.data.keys().hasOnly(['name', 'email', 'createdAt', 'supervisor', 'hasPassword'])
         && request.resource.data.get('supervisor', false) is bool
+        && request.resource.data.get('hasPassword', false) is bool
         && request.resource.data.name is string
         && request.resource.data.name.size() > 0
         && request.resource.data.name.size() <= 80
@@ -67,13 +68,25 @@ service cloud.firestore {
       allow delete: if isAdmin();
     }
 
-    // Quién es cada navegador.
+    // Contraseña de cada persona (solo el hash). Nadie la puede leer; la pone quien administra
+    // o la cambia la persona misma.
+    match /memberSecrets/{id} {
+      allow create, update: if (isAdminAfter() || (isMember() && me() == id))
+        && request.resource.data.keys().hasOnly(['hash'])
+        && request.resource.data.hash is string
+        && request.resource.data.hash.size() == 64;
+      allow delete: if isAdmin();
+    }
+
+    // Quién es cada navegador: para entrar como alguien hay que saber su contraseña.
     match /claims/{uid} {
       allow get: if signedIn() && request.auth.uid == uid;
       allow create, update: if signedIn() && request.auth.uid == uid
-        && request.resource.data.keys().hasOnly(['memberId', 'at'])
+        && request.resource.data.keys().hasOnly(['memberId', 'hash', 'at'])
         && request.resource.data.memberId is string
-        && existsAfter(/databases/$(database)/documents/members/$(request.resource.data.memberId));
+        && existsAfter(/databases/$(database)/documents/members/$(request.resource.data.memberId))
+        && request.resource.data.hash
+          == getAfter(/databases/$(database)/documents/memberSecrets/$(request.resource.data.memberId)).data.hash;
       allow delete: if signedIn() && request.auth.uid == uid;
     }
 

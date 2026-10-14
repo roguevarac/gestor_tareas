@@ -31,13 +31,13 @@ El tiempo se puede escribir como `45`, `45 min`, `1h`, `1h 30`, `1:30`, `1,5 hs`
 
 ## Compartir tareas: la pecera
 
-Es para un equipo de trabajo, sin cuentas ni contraseñas:
+Es para un equipo de trabajo, sin cuentas de mail: cada persona tiene una contraseña que le pone quien administra.
 
 - **Quien administra** arma el equipo la primera vez (Compartir → *Armar el equipo*, con una clave para administrar)
-  y suma a la gente (nombre y mail) desde **Pecera → Equipo**. Desde otra compu entra con *Administro el equipo* y
-  la clave.
-- **Cada persona**, la primera vez en su compu, toca **Compartir** y elige su nombre de la lista. La compu la
-  recuerda. Si la compu la usa otra persona: Pecera → *No soy …*.
+  y suma a la gente (nombre, mail y contraseña) desde **Pecera → Equipo**, donde también le cambia la contraseña a
+  cualquiera (la llavecita). Desde otra compu entra con *Administro el equipo* y su contraseña.
+- **Cada persona**, la primera vez en su compu, toca **Compartir**, elige su nombre y pone su contraseña. La compu la
+  recuerda. Puede cambiarla en la Pecera. Si la compu la usa otra persona: Pecera → *No soy …*.
 
 Después:
 
@@ -60,11 +60,8 @@ José). Esa persona ve:
 - **La caña**, al costado de la pantalla: elige a alguien y le tira la caña. A esa persona le baja la carnada con
   “¿En qué andás?” y contesta con un toque (sus tareas, “En una reunión”…) o con unas palabras.
 
-Cada persona ve en su Pecera quién puede ver sus tareas.
-
 Tus tareas personales se guardan en tu navegador (y, si estás en el equipo, se publica un resumen para el tablero). Las compartidas se guardan en Firebase (de Google).
-Ojo: como no hay contraseñas, cualquiera que tenga el link puede elegir un nombre de la lista; es para usar entre
-gente de confianza. Modo de prueba sin Firebase: abrir la app con `?demo=ana` en una pestaña y `?demo=juan` en otra.
+Modo de prueba sin Firebase: abrir la app con `?demo=ana` en una pestaña y `?demo=juan` en otra.
 
 ### Configurar Firebase (una sola vez)
 
@@ -149,6 +146,10 @@ Source: GitHub Actions**. En repos privados, GitHub Pages necesita un plan pago 
 `dist/` se puede subir a cualquier hosting estático (Netlify, Cloudflare Pages, un servidor interno…).
 
 ## Cambios
+
+### 1.6
+
+- Contraseña para cada persona del equipo.
 
 ### 1.5
 

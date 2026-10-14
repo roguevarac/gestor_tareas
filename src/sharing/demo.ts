@@ -13,6 +13,7 @@ interface DB {
   adminCode: string | null;
   admins: Record<string, true>;
   claims: Record<string, string>;
+  secrets: Record<string, string>;
   members: Record<string, Omit<Profile, 'uid'>>;
   shared: Record<string, Omit<SharedDoc, 'id'>>;
   boards: Record<string, Board>;
@@ -26,6 +27,7 @@ function load(): DB {
       return {
         admins: {},
         claims: {},
+        secrets: {},
         members: {},
         shared: {},
         boards: {},
@@ -37,7 +39,17 @@ function load(): DB {
   } catch {
     /* vacío */
   }
-  return { setup: false, adminCode: null, admins: {}, claims: {}, members: {}, shared: {}, boards: {}, pings: {} };
+  return {
+    setup: false,
+    adminCode: null,
+    admins: {},
+    claims: {},
+    secrets: {},
+    members: {},
+    shared: {},
+    boards: {},
+    pings: {},
+  };
 }
 
 const listeners = new Set<() => void>();
@@ -76,22 +88,24 @@ export function createDemoBackend(handle: string): Backend {
       const memberId = db.claims[d] ?? null;
       return { setup: db.setup, memberId: memberId && db.members[memberId] ? memberId : null, admin: !!db.admins[d] };
     },
-    async setupTeam(d, me, adminCode) {
+    async setupTeam(d, me, password, hashFor) {
       await delay();
       const db = load();
       if (db.setup) throw denied();
       const id = newId();
       db.setup = true;
-      db.adminCode = adminCode;
+      db.adminCode = password;
       db.admins[d] = true;
-      db.members[id] = { name: me.name, email: me.email };
+      db.members[id] = { name: me.name, email: me.email, hasPassword: true };
+      db.secrets[id] = await hashFor(id);
       db.claims[d] = id;
       save(db);
       return id;
     },
-    async claim(d, memberId) {
+    async claim(d, memberId, hash) {
+      await delay();
       const db = load();
-      if (!db.members[memberId]) throw denied();
+      if (!db.members[memberId] || !db.secrets[memberId] || db.secrets[memberId] !== hash) throw denied();
       db.claims[d] = memberId;
       save(db);
     },
@@ -110,18 +124,26 @@ export function createDemoBackend(handle: string): Backend {
     watchMembers(cb) {
       return subscribe(() => cb(Object.entries(load().members).map(([uid, m]) => ({ uid, ...m }))));
     },
-    async addMember(m) {
+    async addMember(m, hashFor) {
       const db = load();
       if (!isAdmin(db)) throw denied();
       const id = newId();
-      db.members[id] = { name: m.name, email: m.email, supervisor: !!m.supervisor };
+      db.members[id] = { name: m.name, email: m.email, supervisor: !!m.supervisor, hasPassword: true };
+      db.secrets[id] = await hashFor(id);
       save(db);
       return id;
     },
     async updateMember(id, m) {
       const db = load();
       if (!isAdmin(db)) throw denied();
-      db.members[id] = { name: m.name, email: m.email, supervisor: !!m.supervisor };
+      db.members[id] = { ...db.members[id], name: m.name, email: m.email, supervisor: !!m.supervisor };
+      save(db);
+    },
+    async setPassword(memberId, hash, byAdmin) {
+      const db = load();
+      if (byAdmin ? !isAdmin(db) : db.claims[device] !== memberId) throw denied();
+      db.secrets[memberId] = hash;
+      if (byAdmin && db.members[memberId]) db.members[memberId].hasPassword = true;
       save(db);
     },
     async saveBoard(b) {
@@ -172,6 +194,7 @@ export function createDemoBackend(handle: string): Backend {
       const db = load();
       if (!isAdmin(db)) throw denied();
       delete db.members[id];
+      delete db.secrets[id];
       save(db);
     },
     watchShared(memberId, cb) {

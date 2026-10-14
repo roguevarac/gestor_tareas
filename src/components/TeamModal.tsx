@@ -34,7 +34,7 @@ function SetupForm() {
   const submit = async () => {
     setError(null);
     if (!name.trim()) return setError('Poné tu nombre.');
-    if (code.trim().length < 6) return setError('La clave tiene que tener al menos 6 caracteres.');
+    if (code.trim().length < 6) return setError('La contraseña tiene que tener al menos 6 caracteres.');
     setBusy(true);
     try {
       await team.setup(name, email, code);
@@ -54,8 +54,8 @@ function SetupForm() {
       }}
     >
       <p className="auth-lead">
-        Es la primera vez que alguien entra. Vos vas a administrar el equipo: sumás a la gente desde la
-        <strong> Pecera → Equipo</strong> y cada persona, en su compu, elige su nombre y listo.
+        Es la primera vez que alguien entra. Vos vas a administrar el equipo: sumás a la gente (con su contraseña)
+        desde la <strong>Pecera → Equipo</strong> y cada persona, en su compu, elige su nombre y pone su contraseña.
       </p>
       <label className="field">
         <span>Tu nombre</span>
@@ -66,7 +66,7 @@ function SetupForm() {
         <input className="input" type="email" value={email} onChange={(e) => setEmail(e.target.value)} autoComplete="email" />
       </label>
       <label className="field">
-        <span>Clave para administrar</span>
+        <span>Tu contraseña</span>
         <input
           className="input"
           type="password"
@@ -76,7 +76,7 @@ function SetupForm() {
           placeholder="Al menos 6 caracteres"
         />
       </label>
-      <p className="hint">Solo la vas a necesitar si querés administrar el equipo desde otra compu. Anotala.</p>
+      <p className="hint">Con esta entrás vos y también administrás el equipo desde otra compu. Anotala.</p>
       {error && (
         <p className="hint hint--warn" role="alert">
           {error}
@@ -99,6 +99,7 @@ function ChooseForm() {
   const [error, setError] = useState<string | null>(null);
   const [adminMode, setAdminMode] = useState(false);
   const [code, setCode] = useState('');
+  const [password, setPassword] = useState('');
 
   const sorted = useMemo(() => {
     const q = query.trim().toLowerCase();
@@ -132,9 +133,9 @@ function ChooseForm() {
           });
         }}
       >
-        <p className="auth-lead">Poné la clave para administrar que elegiste al armar el equipo.</p>
+        <p className="auth-lead">Poné la contraseña que elegiste al armar el equipo.</p>
         <label className="field">
-          <span>Clave para administrar</span>
+          <span>Contraseña de administración</span>
           <input className="input" type="password" value={code} onChange={(e) => setCode(e.target.value)} autoFocus />
         </label>
         {error && (
@@ -157,10 +158,10 @@ function ChooseForm() {
       className="auth-form"
       onSubmit={(e) => {
         e.preventDefault();
-        if (picked) void run(() => team.claim(picked));
+        if (picked && password.trim()) void run(() => team.claim(picked, password));
       }}
     >
-      <p className="auth-lead">Elegí tu nombre. Esta compu te va a recordar.</p>
+      <p className="auth-lead">Elegí tu nombre y poné tu contraseña. Esta compu te va a recordar.</p>
       {!loaded ? (
         <p className="muted center">Cargando el equipo…</p>
       ) : members.length === 0 ? (
@@ -181,8 +182,11 @@ function ChooseForm() {
                 role="radio"
                 aria-checked={picked === m.uid}
                 className={`who ${picked === m.uid ? 'is-on' : ''}`}
-                onClick={() => setPicked(m.uid)}
-                onDoubleClick={() => void run(() => team.claim(m.uid))}
+                onClick={() => {
+                  setPicked(m.uid);
+                  setError(null);
+                  window.setTimeout(() => document.getElementById('who-password')?.focus(), 0);
+                }}
               >
                 <Avatar uid={m.uid} name={m.name} size={30} />
                 <span className="who-name">{m.name}</span>
@@ -192,14 +196,28 @@ function ChooseForm() {
           </div>
         </>
       )}
+      {picked && (
+        <label className="field">
+          <span>Contraseña</span>
+          <input
+            id="who-password"
+            className="input"
+            type="password"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            autoComplete="current-password"
+          />
+        </label>
+      )}
       {error && (
         <p className="hint hint--warn" role="alert">
           {error}
         </p>
       )}
-      <button type="submit" className="btn btn-primary" disabled={busy || !picked}>
+      <button type="submit" className="btn btn-primary" disabled={busy || !picked || !password.trim()}>
         Entrar
       </button>
+      {picked && <p className="hint center muted">¿No la sabés? Pedísela a quien administra el equipo.</p>}
       {isAdmin ? (
         <p className="hint center">Esta compu ya puede administrar el equipo.</p>
       ) : (

@@ -59,18 +59,26 @@ export function createFirebaseBackend(config: Record<string, string>): Backend {
       const memberId = claim?.exists() ? ((claim.data().memberId as string) ?? null) : null;
       return { setup, memberId, admin };
     },
-    async setupTeam(deviceId, me, adminCode) {
+    async setupTeam(deviceId, me, password, hashFor) {
       const batch = writeBatch(db);
       const memberRef = doc(members);
-      batch.set(doc(db, 'config', 'secrets'), { adminCode });
-      batch.set(doc(db, 'admins', deviceId), { code: adminCode });
-      batch.set(memberRef, { name: me.name, email: me.email, createdAt: Date.now() });
-      batch.set(doc(db, 'claims', deviceId), { memberId: memberRef.id, at: Date.now() });
+      const hash = await hashFor(memberRef.id);
+      batch.set(doc(db, 'config', 'secrets'), { adminCode: password });
+      batch.set(doc(db, 'admins', deviceId), { code: password });
+      batch.set(memberRef, {
+        name: me.name,
+        email: me.email,
+        supervisor: false,
+        hasPassword: true,
+        createdAt: Date.now(),
+      });
+      batch.set(doc(db, 'memberSecrets', memberRef.id), { hash });
+      batch.set(doc(db, 'claims', deviceId), { memberId: memberRef.id, hash, at: Date.now() });
       batch.set(doc(db, 'config', 'public'), { createdAt: Date.now() });
       await batch.commit();
       return memberRef.id;
     },
-    claim: (deviceId, memberId) => setDoc(doc(db, 'claims', deviceId), { memberId, at: Date.now() }),
+    claim: (deviceId, memberId, hash) => setDoc(doc(db, 'claims', deviceId), { memberId, hash, at: Date.now() }),
     unclaim: (deviceId) => deleteDoc(doc(db, 'claims', deviceId)),
     becomeAdmin: (deviceId, code) => setDoc(doc(db, 'admins', deviceId), { code }),
     watchMembers(cb, onError) {
@@ -80,20 +88,37 @@ export function createFirebaseBackend(config: Record<string, string>): Backend {
           cb(
             snap.docs.map((d): Profile => {
               const v = d.data();
-              return { uid: d.id, name: v.name ?? '', email: v.email ?? '', supervisor: v.supervisor === true };
+              return {
+                uid: d.id,
+                name: v.name ?? '',
+                email: v.email ?? '',
+                supervisor: v.supervisor === true,
+                hasPassword: v.hasPassword === true,
+              };
             }),
           ),
         onError,
       );
     },
-    async addMember(m) {
-      const ref = await addDoc(members, {
+    async addMember(m, hashFor) {
+      const ref = doc(members);
+      const batch = writeBatch(db);
+      batch.set(ref, {
         name: m.name,
         email: m.email,
         supervisor: !!m.supervisor,
+        hasPassword: true,
         createdAt: Date.now(),
       });
+      batch.set(doc(db, 'memberSecrets', ref.id), { hash: await hashFor(ref.id) });
+      await batch.commit();
       return ref.id;
+    },
+    async setPassword(memberId, hash, byAdmin) {
+      const batch = writeBatch(db);
+      batch.set(doc(db, 'memberSecrets', memberId), { hash });
+      if (byAdmin) batch.update(doc(db, 'members', memberId), { hasPassword: true });
+      await batch.commit();
     },
     updateMember: (id, m) =>
       updateDoc(doc(db, 'members', id), { name: m.name, email: m.email, supervisor: !!m.supervisor }),
@@ -118,7 +143,12 @@ export function createFirebaseBackend(config: Record<string, string>): Backend {
         onError,
       );
     },
-    removeMember: (id) => deleteDoc(doc(db, 'members', id)),
+    async removeMember(id) {
+      const batch = writeBatch(db);
+      batch.delete(doc(db, 'members', id));
+      batch.delete(doc(db, 'memberSecrets', id));
+      await batch.commit();
+    },
     watchShared(memberId, cb, onError) {
       return onSnapshot(
         query(shared, where('participants', 'array-contains', memberId)),

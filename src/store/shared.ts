@@ -318,22 +318,51 @@ const wrap = async <T,>(fn: () => Promise<T>, fallback: string): Promise<T> => {
   }
 };
 
+export const MIN_PASSWORD = 4;
+
+/** Hash de la contraseña de una persona (el servidor nunca guarda la contraseña en sí). */
+export async function passwordHash(memberId: string, password: string): Promise<string> {
+  const data = new TextEncoder().encode(`mis-tareas:${memberId}:${password}`);
+  const digest = await crypto.subtle.digest('SHA-256', data);
+  return [...new Uint8Array(digest)].map((b) => b.toString(16).padStart(2, '0')).join('');
+}
+
 export const team = {
-  /** Primera vez: quien administra arma el equipo y queda adentro. */
-  async setup(name: string, email: string, adminCode: string) {
+  /** Primera vez: quien administra arma el equipo y queda adentro. Su contraseña sirve también para administrar. */
+  async setup(name: string, email: string, password: string) {
     const d = needDevice();
+    const pw = password.trim();
     const id = await wrap(
-      () => backend!.setupTeam(d, { name: name.trim(), email: email.trim() }, adminCode.trim()),
+      () =>
+        backend!.setupTeam(d, { name: name.trim(), email: email.trim() }, pw, (memberId) => passwordHash(memberId, pw)),
       'No pude armar el equipo',
     );
     set({ isAdmin: true });
     setMember(id, 'ready');
   },
-  /** "¿Quién sos?": este navegador queda como esa persona. */
-  async claim(memberId: string) {
+  /** "¿Quién sos?": este navegador queda como esa persona (con su contraseña). */
+  async claim(memberId: string, password: string) {
     const d = needDevice();
-    await wrap(() => backend!.claim(d, memberId), 'No pude entrar');
+    const hash = await passwordHash(memberId, password.trim());
+    try {
+      await backend!.claim(d, memberId, hash);
+    } catch (e) {
+      console.error(e);
+      if ((e as { code?: string }).code === 'permission-denied') throw new Error('Contraseña incorrecta.');
+      throw new Error(errorText(e) ?? 'No pude entrar');
+    }
     setMember(memberId, 'ready');
+  },
+  /** Quien administra pone o cambia la contraseña de alguien; o cada uno cambia la suya. */
+  async setPassword(memberId: string, password: string) {
+    if (!backend) return;
+    const pw = password.trim();
+    if (pw.length < MIN_PASSWORD) throw new Error(`La contraseña tiene que tener al menos ${MIN_PASSWORD} caracteres.`);
+    const byAdmin = get().isAdmin;
+    await wrap(
+      async () => backend!.setPassword(memberId, await passwordHash(memberId, pw), byAdmin),
+      'No pude cambiar la contraseña',
+    );
   },
   /** Cambiar de persona en esta compu. */
   async leave() {
@@ -352,9 +381,14 @@ export const team = {
     }
     set({ isAdmin: true });
   },
-  async add(name: string, email: string) {
+  async add(name: string, email: string, password: string) {
     if (!backend || !name.trim()) return;
-    await wrap(() => backend!.addMember({ name: name.trim(), email: email.trim() }), 'No pude sumarlo');
+    const pw = password.trim();
+    if (pw.length < MIN_PASSWORD) throw new Error(`La contraseña tiene que tener al menos ${MIN_PASSWORD} caracteres.`);
+    await wrap(
+      () => backend!.addMember({ name: name.trim(), email: email.trim() }, (id) => passwordHash(id, pw)),
+      'No pude sumarlo',
+    );
   },
   async update(id: string, name: string, email: string, supervisor = false) {
     if (!backend || !name.trim()) return;

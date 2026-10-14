@@ -139,3 +139,9 @@ export const IconBoard = (p: P) => (
     <path d="M9 4v16M15 4v16" />
   </svg>
 );
+export const IconKey = (p: P) => (
+  <svg {...base(p)}>
+    <circle cx="8" cy="15" r="4" />
+    <path d="M11 12l9-9M17 6l3 3M14.5 8.5l2.5 2.5" />
+  </svg>
+);

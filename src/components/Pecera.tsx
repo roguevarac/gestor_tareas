@@ -5,6 +5,7 @@ import {
   declineFish,
   deleteShared,
   recoverSent,
+  MIN_PASSWORD,
   team,
   useIncoming,
   useSent,
@@ -17,7 +18,7 @@ import { Modal } from './Modal';
 import { SpeciesFish } from './Fishes';
 import { Avatar } from './Avatar';
 import { EditableText } from './EditableText';
-import { IconCopy, IconEye, IconLogout, IconPlus, IconSend, IconX } from './Icons';
+import { IconCopy, IconEye, IconKey, IconLogout, IconPlus, IconSend, IconX } from './Icons';
 import { copyText } from './MailLinks';
 import { APP_URL } from './SendFishDialog';
 
@@ -27,8 +28,6 @@ export function Pecera() {
   const me = useShared((s) => s.me);
   const backendKind = useShared((s) => s.backendKind);
   const isAdmin = useShared((s) => s.isAdmin);
-  const users = useShared((s) => s.users);
-  const watchers = users.filter((u) => u.supervisor && u.uid !== me?.uid);
   const incoming = useIncoming();
   const sent = useSent();
   const toast = useUI((s) => s.toast);
@@ -54,14 +53,9 @@ export function Pecera() {
               <span className="pecera-name">{me.name}</span>
               <small>
                 {me.email}
-                {backendKind === 'demo' ? ' · modo prueba' : ''}
+                {backendKind === 'demo' ? `${me.email ? ' · ' : ''}modo prueba` : ''}
               </small>
-              {watchers.length > 0 && (
-                <small className="pecera-watchers">
-                  Tus tareas abiertas y lo que terminás en el día las ve{watchers.length > 1 ? 'n' : ''}:{' '}
-                  {watchers.map((w) => firstName(w.name)).join(', ')}
-                </small>
-              )}
+              <MyPassword memberId={me.uid} />
             </div>
             <button
               type="button"
@@ -226,18 +220,21 @@ function TeamSection() {
   const toast = useUI((s) => s.toast);
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
   const [busy, setBusy] = useState(false);
   const [confirm, setConfirm] = useState<string | null>(null);
+  const [pwFor, setPwFor] = useState<string | null>(null);
   const sorted = [...members].sort((a, b) => a.name.localeCompare(b.name, 'es'));
 
   const add = async () => {
     if (!name.trim()) return;
     setBusy(true);
     try {
-      await team.add(name, email);
-      toast(`${firstName(name)} ya está en el equipo`);
+      await team.add(name, email, password);
+      toast(`${firstName(name)} ya está en el equipo. Pasale su contraseña.`);
       setName('');
       setEmail('');
+      setPassword('');
     } catch (e) {
       toast(e instanceof Error ? e.message : 'No pude sumarlo');
     } finally {
@@ -252,7 +249,8 @@ function TeamSection() {
       </h3>
       <ul className="team-list">
         {sorted.map((m) => (
-          <li key={m.uid} className="team-row">
+          <li key={m.uid} className="team-item">
+            <div className="team-row">
             <Avatar uid={m.uid} name={m.name} size={28} />
             <div className="team-main">
               <EditableText
@@ -267,7 +265,18 @@ function TeamSection() {
                 className={`team-email ${m.email ? '' : 'is-empty'}`}
                 ariaLabel={`Mail de ${m.name}`}
               />
+              {!m.hasPassword && <small className="team-nopw">Sin contraseña: no puede entrar</small>}
             </div>
+            <button
+              type="button"
+              className={`icon-btn team-key ${m.hasPassword ? '' : 'is-missing'}`}
+              onClick={() => setPwFor(pwFor === m.uid ? null : m.uid)}
+              aria-expanded={pwFor === m.uid}
+              aria-label={`Contraseña de ${m.name}`}
+              title={m.hasPassword ? 'Cambiar su contraseña' : 'Ponerle contraseña'}
+            >
+              <IconKey size={16} />
+            </button>
             <button
               type="button"
               className={`sup-toggle ${m.supervisor ? 'is-on' : ''}`}
@@ -303,6 +312,18 @@ function TeamSection() {
                 <IconX size={15} />
               </button>
             )}
+            </div>
+            {pwFor === m.uid && (
+              <PasswordForm
+                label={m.hasPassword ? `Nueva contraseña de ${firstName(m.name)}` : `Contraseña para ${firstName(m.name)}`}
+                onSave={async (pw) => {
+                  await team.setPassword(m.uid, pw);
+                  setPwFor(null);
+                  toast(`Contraseña de ${firstName(m.name)} guardada. Pasásela.`);
+                }}
+                onCancel={() => setPwFor(null)}
+              />
+            )}
           </li>
         ))}
       </ul>
@@ -322,14 +343,101 @@ function TeamSection() {
           placeholder="Mail (opcional)"
           aria-label="Mail"
         />
-        <button type="submit" className="btn btn-secondary" disabled={busy || !name.trim()}>
+        <input
+          className="input"
+          type="text"
+          value={password}
+          onChange={(e) => setPassword(e.target.value)}
+          placeholder="Contraseña"
+          aria-label="Contraseña"
+          autoComplete="off"
+        />
+        <button
+          type="submit"
+          className="btn btn-secondary"
+          disabled={busy || !name.trim() || password.trim().length < MIN_PASSWORD}
+          title={password.trim().length < MIN_PASSWORD ? `Contraseña de al menos ${MIN_PASSWORD} caracteres` : undefined}
+        >
           <IconPlus size={16} /> Sumar
         </button>
       </form>
       <p className="hint muted">
-        Cada persona abre la app, toca Compartir y elige su nombre. Con <strong>Tablero</strong> le das a alguien la
-        vista de las tareas de todos y la caña para preguntar “¿En qué andás?”.
+        Cada persona abre la app, toca Compartir, elige su nombre y pone la contraseña que le diste. Con
+        <strong> Tablero</strong> le das a alguien la vista de las tareas de todos y la caña para preguntar “¿En qué
+        andás?”.
       </p>
     </section>
+  );
+}
+
+function PasswordForm({
+  label,
+  onSave,
+  onCancel,
+}: {
+  label: string;
+  onSave(pw: string): Promise<void>;
+  onCancel(): void;
+}) {
+  const [pw, setPw] = useState('');
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  return (
+    <form
+      className="pw-form"
+      onSubmit={async (e) => {
+        e.preventDefault();
+        setBusy(true);
+        setError(null);
+        try {
+          await onSave(pw);
+        } catch (err) {
+          setError(err instanceof Error ? err.message : 'No pude guardarla');
+        } finally {
+          setBusy(false);
+        }
+      }}
+    >
+      <input
+        className="input"
+        type="text"
+        value={pw}
+        onChange={(e) => setPw(e.target.value)}
+        placeholder={label}
+        aria-label={label}
+        autoComplete="new-password"
+        autoFocus
+      />
+      <button type="submit" className="btn btn-primary btn-sm" disabled={busy || pw.trim().length < MIN_PASSWORD}>
+        Guardar
+      </button>
+      <button type="button" className="btn btn-ghost btn-sm" onClick={onCancel}>
+        Cancelar
+      </button>
+      {error && <p className="hint hint--warn">{error}</p>}
+    </form>
+  );
+}
+
+/** Cada uno puede cambiar su propia contraseña. */
+function MyPassword({ memberId }: { memberId: string }) {
+  const [open, setOpen] = useState(false);
+  const toast = useUI((s) => s.toast);
+  if (!open)
+    return (
+      <button type="button" className="link-btn pecera-pw" onClick={() => setOpen(true)}>
+        Cambiar mi contraseña
+      </button>
+    );
+  return (
+    <PasswordForm
+      label="Tu nueva contraseña"
+      onSave={async (pw) => {
+        await team.setPassword(memberId, pw);
+        setOpen(false);
+        toast('Contraseña cambiada');
+      }}
+      onCancel={() => setOpen(false)}
+    />
   );
 }
