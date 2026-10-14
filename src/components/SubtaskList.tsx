@@ -13,6 +13,8 @@ export function SubtaskList({ task, variant = 'card' }: { task: Task; variant?: 
   const focusOf = useUI((s) => s.focusSubtasksOf);
   const setFocusOf = useUI((s) => s.setFocusSubtasksOf);
   const [draft, setDraft] = useState('');
+  /** De quién es la próxima subtarea (proyectos con varias personas). */
+  const [who, setWho] = useState('');
   const inputRef = useRef<HTMLInputElement>(null);
   // Proyectos compartidos entre varias personas: cada subtarea con su responsable.
   const joint = !!task.shared && (task.shared.mode === 'joint' || task.shared.people.length > 1);
@@ -26,7 +28,7 @@ export function SubtaskList({ task, variant = 'card' }: { task: Task; variant?: 
 
   const submit = () => {
     if (!draft.trim()) return;
-    taskOps.addSubtask(task, draft);
+    taskOps.addSubtask(task, draft, joint && who ? who : null);
     setDraft('');
   };
 
@@ -102,6 +104,22 @@ export function SubtaskList({ task, variant = 'card' }: { task: Task; variant?: 
             }
           }}
         />
+        {joint && (
+          <select
+            className="subtask-who"
+            value={who}
+            onChange={(e) => setWho(e.target.value)}
+            aria-label="De quién es la subtarea nueva"
+            title="De quién es la subtarea nueva"
+          >
+            <option value="">De nadie</option>
+            {(task.shared?.people ?? []).map((p) => (
+              <option key={p.uid} value={p.uid}>
+                {p.uid === task.shared?.me ? 'Mía' : firstName(p.name)}
+              </option>
+            ))}
+          </select>
+        )}
       </form>
     </div>
   );

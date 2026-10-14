@@ -158,7 +158,7 @@ function ChooseForm() {
       className="auth-form"
       onSubmit={(e) => {
         e.preventDefault();
-        if (picked && password.trim()) void run(() => team.claim(picked, password));
+        if (picked && (password.trim() || isAdmin)) void run(() => team.claim(picked, password));
       }}
     >
       <p className="auth-lead">Elegí tu nombre y poné tu contraseña. Esta compu te va a recordar.</p>
@@ -198,7 +198,7 @@ function ChooseForm() {
       )}
       {picked && (
         <label className="field">
-          <span>Contraseña</span>
+          <span>Contraseña{isAdmin ? ' (opcional: esta compu administra el equipo)' : ''}</span>
           <input
             id="who-password"
             className="input"
@@ -214,12 +214,18 @@ function ChooseForm() {
           {error}
         </p>
       )}
-      <button type="submit" className="btn btn-primary" disabled={busy || !picked || !password.trim()}>
+      <button type="submit" className="btn btn-primary" disabled={busy || !picked || (!password.trim() && !isAdmin)}>
         Entrar
       </button>
-      {picked && <p className="hint center muted">¿No la sabés? Pedísela a quien administra el equipo.</p>}
+      {picked && !isAdmin && (
+        <p className="hint center muted">
+          {members.find((m) => m.uid === picked)?.hasPassword === false
+            ? 'Todavía no tenés contraseña: pedile a quien administra el equipo que te ponga una.'
+            : '¿No la sabés? Pedísela a quien administra el equipo.'}
+        </p>
+      )}
       {isAdmin ? (
-        <p className="hint center">Esta compu ya puede administrar el equipo.</p>
+        <p className="hint center">Esta compu administra el equipo: podés entrar sin contraseña.</p>
       ) : (
         <button type="button" className="link-btn" onClick={() => setAdminMode(true)}>
           Administro el equipo

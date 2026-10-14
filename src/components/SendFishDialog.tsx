@@ -61,6 +61,7 @@ function SendForm() {
     (source?.subtasks ?? []).map((s) => ({ key: nextKey(), title: s.title, assignee: null, done: s.done })),
   );
   const [subDraft, setSubDraft] = useState('');
+  const [subWho, setSubWho] = useState('');
   const [busy, setBusy] = useState(false);
 
   const effectiveKind: TaskKind = mode === 'joint' ? 'project' : kind;
@@ -90,7 +91,7 @@ function SendForm() {
   const toggle = (uid: string) => setTo((t) => (t.includes(uid) ? t.filter((x) => x !== uid) : [...t, uid]));
   const addSub = () => {
     if (!subDraft.trim()) return;
-    setSubs((s) => [...s, { key: nextKey(), title: subDraft.trim(), assignee: null, done: false }]);
+    setSubs((s) => [...s, { key: nextKey(), title: subDraft.trim(), assignee: canAssign && subWho ? subWho : null, done: false }]);
     setSubDraft('');
   };
 
@@ -275,6 +276,21 @@ function SendForm() {
             >
               <IconPlus size={15} />
               <input value={subDraft} onChange={(e) => setSubDraft(e.target.value)} placeholder="Agregar subtarea…" aria-label="Agregar subtarea" />
+              {canAssign && (
+                <select
+                  className="send-sub-who"
+                  value={subWho}
+                  onChange={(e) => setSubWho(e.target.value)}
+                  aria-label="De quién es la subtarea nueva"
+                >
+                  <option value="">De nadie</option>
+                  {assignees.map((p) => (
+                    <option key={p.uid} value={p.uid}>
+                      {p.uid === me.uid ? `${p.name} (yo)` : p.name}
+                    </option>
+                  ))}
+                </select>
+              )}
             </form>
             {mode === 'joint' && to.length === 0 && subs.length > 0 && (
               <p className="hint">Elegí a quién se la mandás para poder asignarle subtareas.</p>

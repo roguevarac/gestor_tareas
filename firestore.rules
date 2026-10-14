@@ -85,8 +85,12 @@ service cloud.firestore {
         && request.resource.data.keys().hasOnly(['memberId', 'hash', 'at'])
         && request.resource.data.memberId is string
         && existsAfter(/databases/$(database)/documents/members/$(request.resource.data.memberId))
-        && request.resource.data.hash
-          == getAfter(/databases/$(database)/documents/memberSecrets/$(request.resource.data.memberId)).data.hash;
+        && (
+          // una compu que administra el equipo puede entrar como cualquiera (para arreglar contraseñas)
+          isAdmin()
+          || request.resource.data.hash
+            == getAfter(/databases/$(database)/documents/memberSecrets/$(request.resource.data.memberId)).data.hash
+        );
       allow delete: if signedIn() && request.auth.uid == uid;
     }
 

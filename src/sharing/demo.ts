@@ -105,7 +105,8 @@ export function createDemoBackend(handle: string): Backend {
     async claim(d, memberId, hash) {
       await delay();
       const db = load();
-      if (!db.members[memberId] || !db.secrets[memberId] || db.secrets[memberId] !== hash) throw denied();
+      if (!db.members[memberId]) throw denied();
+      if (!db.admins[d] && (!db.secrets[memberId] || db.secrets[memberId] !== hash)) throw denied();
       db.claims[d] = memberId;
       save(db);
     },

@@ -343,7 +343,8 @@ export const team = {
   /** "¿Quién sos?": este navegador queda como esa persona (con su contraseña). */
   async claim(memberId: string, password: string) {
     const d = needDevice();
-    const hash = await passwordHash(memberId, password.trim());
+    // Una compu que administra el equipo puede entrar sin contraseña.
+    const hash = password.trim() ? await passwordHash(memberId, password.trim()) : '';
     try {
       await backend!.claim(d, memberId, hash);
     } catch (e) {
