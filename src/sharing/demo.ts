@@ -156,7 +156,7 @@ export function createDemoBackend(handle: string): Backend {
       return subscribe(() => {
         const db = load();
         const mine = db.claims[device];
-        if (!mine || !db.members[mine]?.supervisor) return cb([]);
+        if (!mine || !db.members[mine]) return cb([]);
         cb(Object.values(db.boards));
       });
     },

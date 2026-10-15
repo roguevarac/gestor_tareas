@@ -54,11 +54,11 @@ Después:
 - **Recibir**: el pez llega nadando con la tarea. *Aceptar* la pone en tu lista, *No la tomo* le avisa a quien la
   mandó (y la puede recuperar), *Después* la deja esperando en la pecera.
 
-**Tablero y caña (supervisión).** En Pecera → Equipo, quien administra le da **Tablero** a alguien (por ejemplo,
-José). Esa persona ve:
+**Tareas del equipo (todos).** Botón arriba: un portal aparte con la lista de nombres. Tocando un nombre se ven
+las tareas de esa persona como ella las ve (sin notas ni mails) y lo que terminó en el día. Es solo para mirar.
 
-- **Equipo** (arriba): un portal aparte, *Tareas del equipo*, con la lista de nombres. Tocando un nombre ve las
-  tareas de esa persona como ella las ve (sin notas ni mails) y lo que terminó en el día. Es solo para mirar.
+**La caña (supervisión).** En Pecera → Equipo, quien administra le da **Caña** a alguien (por ejemplo, José):
+
 - **La caña**, al costado de la pantalla: elige a alguien y le tira la caña. A esa persona le baja la carnada con
   “¿En qué andás?” y contesta con un toque (sus tareas, “En una reunión”…) o con unas palabras.
 
@@ -148,6 +148,10 @@ Source: GitHub Actions**. En repos privados, GitHub Pages necesita un plan pago 
 `dist/` se puede subir a cualquier hosting estático (Netlify, Cloudflare Pages, un servidor interno…).
 
 ## Cambios
+
+### 1.9
+
+- *Tareas del equipo* para todos (antes solo para quien supervisa). La caña sigue siendo solo de quien la tiene.
 
 ### 1.8
 

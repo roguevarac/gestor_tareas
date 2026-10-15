@@ -9,8 +9,8 @@ import { useTasks } from './tasks';
 import { useUI } from './ui';
 
 /**
- * Supervisión: el tablero del equipo (qué tiene cada uno en el agua) y la caña de pescar
- * ("¿En qué andás?"). Solo lo usa quien tiene "ve el tablero" en el equipo.
+ * Tareas del equipo (qué tiene cada uno en el agua: lo ven todos) y la caña de pescar
+ * ("¿En qué andás?": solo quien supervisa).
  */
 interface SupervisionState {
   boards: Board[];
@@ -63,15 +63,16 @@ export function startSupervision() {
     set({ boards: [], pingsIn: [], pingsOut: [] });
     const backend = getBackend();
     if (!key || !backend || !memberId) return;
-    unwatch.push(backend.watchPings('to', memberId, (pingsIn) => set({ pingsIn }), fail));
+    // Todos ven las tareas del equipo; la caña es solo de quien supervisa.
+    unwatch.push(
+      backend.watchPings('to', memberId, (pingsIn) => set({ pingsIn }), fail),
+      backend.watchBoards((boards) => set({ boards }), fail),
+    );
     if (supervisor) {
       answersSeeded = false;
-      unwatch.push(
-        backend.watchBoards((boards) => set({ boards }), fail),
-        backend.watchPings('from', memberId, onPingsOut, fail),
-      );
+      unwatch.push(backend.watchPings('from', memberId, onPingsOut, fail));
     } else {
-      set({ boardOpen: false, rodOpen: false });
+      set({ rodOpen: false });
     }
   };
   useShared.subscribe(sync);
@@ -136,12 +137,17 @@ function buildBoard(memberId: string): Board {
 
 function startBoardPublisher() {
   let timer: number | undefined;
+  let pendingSince = 0;
   let last = '';
+  // Espera a que se calmen los cambios (2,5 s), pero nunca más de 6 s desde el primero.
   const schedule = () => {
+    const now = Date.now();
+    if (!pendingSince) pendingSince = now;
     window.clearTimeout(timer);
-    timer = window.setTimeout(publish, 2500);
+    timer = window.setTimeout(publish, Math.max(0, Math.min(2500, pendingSince + 6000 - now)));
   };
   const publish = () => {
+    pendingSince = 0;
     const { memberId, status } = useShared.getState();
     const backend = getBackend();
     if (status !== 'ready' || !memberId || !backend) return;

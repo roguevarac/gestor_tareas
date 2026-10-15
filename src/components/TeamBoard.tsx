@@ -13,13 +13,13 @@ import { IconCheck, IconSearch, IconUsers } from './Icons';
 import { RodIcon } from './FishingRod';
 
 /**
- * Portal "Tareas del equipo" (solo supervisión): una pantalla aparte para mirar qué tiene cada uno.
+ * Portal "Tareas del equipo" (para todos): una pantalla aparte para mirar qué tiene cada uno.
  * Es solo para ver: desde acá no se puede cambiar nada.
  */
 export function TeamBoard() {
   const open = useSupervision((s) => s.boardOpen);
-  const supervisor = useShared((s) => s.status === 'ready' && !!s.me?.supervisor);
-  const show = open && supervisor;
+  const ready = useShared((s) => s.status === 'ready');
+  const show = open && ready;
 
   useEffect(() => {
     if (!show) return;
@@ -153,8 +153,9 @@ function matches(t: BoardTask, q: string) {
 
 function CastButton({ user }: { user: Profile }) {
   const me = useShared((s) => s.memberId);
+  const supervisor = useShared((s) => !!s.me?.supervisor);
   const toast = useUI((s) => s.toast);
-  if (user.uid === me) return null;
+  if (user.uid === me || !supervisor) return null;
   return (
     <button
       type="button"

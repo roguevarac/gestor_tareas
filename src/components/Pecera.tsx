@@ -15,7 +15,8 @@ import { Modal } from './Modal';
 import { SpeciesFish } from './Fishes';
 import { Avatar } from './Avatar';
 import { EditableText } from './EditableText';
-import { IconCopy, IconEye, IconKey, IconLogout, IconPlus, IconSend, IconX } from './Icons';
+import { IconCopy, IconKey, IconLogout, IconPlus, IconSend, IconX } from './Icons';
+import { RodIcon } from './FishingRod';
 import { copyText } from './MailLinks';
 import { APP_URL } from './SendFishDialog';
 
@@ -220,11 +221,11 @@ function TeamSection() {
               onClick={() => void team.update(m.uid, m.name, m.email, !m.supervisor)}
               title={
                 m.supervisor
-                  ? 'Ve el tablero del equipo y usa la caña. Tocá para sacárselo.'
-                  : 'Darle el tablero del equipo y la caña ("¿En qué andás?")'
+                  ? 'Tiene la caña ("¿En qué andás?"). Tocá para sacársela.'
+                  : 'Darle la caña para preguntar "¿En qué andás?"'
               }
             >
-              <IconEye size={15} /> {m.supervisor ? 'Ve el tablero' : 'Tablero'}
+              <RodIcon size={15} /> {m.supervisor ? 'Tiene la caña' : 'Caña'}
             </button>
             {m.uid === memberId ? (
               <span className="tag">vos</span>
@@ -299,8 +300,7 @@ function TeamSection() {
       </form>
       <p className="hint muted">
         Cada persona abre la app, toca Compartir, elige su nombre y pone la contraseña que le diste. Con
-        <strong> Tablero</strong> le das a alguien la vista de las tareas de todos y la caña para preguntar “¿En qué
-        andás?”.
+        <strong> Caña</strong> le das a alguien (por ejemplo, José) la caña para preguntar “¿En qué andás?”.
       </p>
     </section>
   );

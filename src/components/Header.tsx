@@ -64,10 +64,10 @@ function SentButton() {
   );
 }
 
-/** Solo supervisión: el tablero con las tareas de todo el equipo. */
+/** Para todos: las tareas de cada persona del equipo (solo para mirar). */
 function BoardButton() {
-  const supervisor = useShared((s) => s.status === 'ready' && !!s.me?.supervisor);
-  if (!supervisor) return null;
+  const ready = useShared((s) => s.status === 'ready');
+  if (!ready) return null;
   return (
     <button
       type="button"
@@ -75,7 +75,7 @@ function BoardButton() {
       onClick={() => useSupervision.setState({ boardOpen: true })}
       title="Ver las tareas de cada persona del equipo (solo para mirar)"
     >
-      <IconBoard size={17} /> <span className="hide-sm">Equipo</span>
+      <IconBoard size={17} /> <span className="hide-sm">Tareas del equipo</span>
     </button>
   );
 }
