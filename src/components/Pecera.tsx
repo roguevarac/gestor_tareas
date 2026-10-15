@@ -1,10 +1,7 @@
 import { useState } from 'react';
-import type { SharedDoc } from '../sharing/types';
 import {
   acceptFish,
   declineFish,
-  deleteShared,
-  recoverSent,
   MIN_PASSWORD,
   team,
   useIncoming,
@@ -119,11 +116,13 @@ export function Pecera() {
         {sent.length === 0 ? (
           <p className="muted small">Todavía no mandaste ningún pez.</p>
         ) : (
-          <ul className="pecera-list">
-            {sent.map((d) => (
-              <SentItem key={d.id} doc={d} />
-            ))}
-          </ul>
+          <button
+            type="button"
+            className="btn btn-secondary btn-sm"
+            onClick={() => useShared.setState({ peceraOpen: false, sentOpen: true })}
+          >
+            <IconSend size={15} /> Ver tareas enviadas
+          </button>
         )}
       </section>
 
@@ -147,69 +146,6 @@ export function Pecera() {
         </button>
       </section>
     </Modal>
-  );
-}
-
-const STATE_LABEL: Record<string, string> = {
-  pending: 'esperando',
-  accepted: 'aceptó',
-  declined: 'no la tomó',
-  left: 'salió',
-};
-
-function SentItem({ doc }: { doc: SharedDoc }) {
-  const me = useShared((s) => s.memberId);
-  const [confirm, setConfirm] = useState(false);
-  const recipients = doc.participants.filter((u) => u !== me);
-  const total = doc.subtasks.length;
-  const done = doc.subtasks.filter((s) => s.done).length;
-  const allDeclined = recipients.every((u) => ['declined', 'left'].includes(doc.invites[u]));
-  const nobodyAnswered = recipients.every((u) => doc.invites[u] === 'pending');
-  const finished = doc.state === 'done';
-
-  return (
-    <li className={`pecera-item ${finished ? 'is-done' : ''}`}>
-      <SpeciesFish kind={doc.fish} width={58} swim={false} />
-      <div className="pecera-main">
-        <p className="pecera-title">{doc.title}</p>
-        <p className="pecera-meta">
-          {doc.mode === 'joint' ? 'Conjunta' : 'Para que la haga'}
-          {total > 0 && ` · ${done}/${total} subtareas`}
-          {finished && doc.doneBy && ` · terminada por ${doc.doneBy === me ? 'vos' : firstName(doc.names[doc.doneBy] ?? '')}`}
-        </p>
-        <div className="pecera-people">
-          {recipients.map((u) => (
-            <span key={u} className={`person-state is-${doc.invites[u]}`}>
-              <Avatar uid={u} name={doc.names[u] ?? '?'} size={20} />
-              {firstName(doc.names[u] ?? '')}
-              <small>{finished && doc.invites[u] === 'accepted' ? 'terminada' : STATE_LABEL[doc.invites[u]] ?? ''}</small>
-            </span>
-          ))}
-        </div>
-        <div className="pecera-actions">
-          {doc.mode === 'assigned' && (allDeclined || nobodyAnswered) && !finished && (
-            <button type="button" className="btn btn-secondary btn-sm" onClick={() => void recoverSent(doc.id)}>
-              Recuperarla
-            </button>
-          )}
-          {confirm ? (
-            <>
-              <span className="small">¿Borrarla para todos?</span>
-              <button type="button" className="btn btn-danger btn-sm" onClick={() => void deleteShared(doc.id)}>
-                Sí
-              </button>
-              <button type="button" className="btn btn-ghost btn-sm" onClick={() => setConfirm(false)}>
-                No
-              </button>
-            </>
-          ) : (
-            <button type="button" className="btn btn-ghost btn-sm btn-danger-text" onClick={() => setConfirm(true)}>
-              {finished ? 'Quitar' : nobodyAnswered ? 'Cancelar' : 'Borrar'}
-            </button>
-          )}
-        </div>
-      </div>
-    </li>
   );
 }
 

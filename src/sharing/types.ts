@@ -20,6 +20,8 @@ export interface BoardTask {
   title: string;
   kind: TaskKind;
   createdAt: number;
+  /** Color de la tarjeta (como la ve la persona). */
+  tone?: number;
   /** Compartida: conjunta o mandada por alguien. */
   shared?: 'joint' | 'assigned' | null;
   from?: string | null;

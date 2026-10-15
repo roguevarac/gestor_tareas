@@ -118,3 +118,8 @@ export function ago(t: number): string {
   const d = Math.round(h / 24);
   return d === 1 ? 'ayer' : `hace ${d} días`;
 }
+
+/** Fecha y hora de algo (por ejemplo, cuándo se mandó): "Hoy, 13:56 h", "Lunes 12 de octubre, 9:05 h". */
+export function dateTimeLabel(ts: number): string {
+  return `${dayLabel(ts)}, ${formatTime(ts)} h`;
+}

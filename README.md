@@ -50,13 +50,15 @@ Después:
     iniciales; tocándolo se cambia) y cualquiera puede tildar. Cuando alguien lo tira al balde, se termina para todos.
   - Un proyecto "que la haga" para varias personas puede llevar un responsable por subtarea: les llega un solo
     proyecto a todos (sin responsables, a cada uno le llega su copia).
+- **Enviadas** (arriba, para todos): las tareas que mandaste, con fecha de envío, a quién, si aceptaron y cómo van.
 - **Recibir**: el pez llega nadando con la tarea. *Aceptar* la pone en tu lista, *No la tomo* le avisa a quien la
   mandó (y la puede recuperar), *Después* la deja esperando en la pecera.
 
 **Tablero y caña (supervisión).** En Pecera → Equipo, quien administra le da **Tablero** a alguien (por ejemplo,
 José). Esa persona ve:
 
-- **Tablero**: las tareas abiertas de cada uno (sin notas ni mails) y lo que terminó en el día.
+- **Equipo** (arriba): un portal aparte, *Tareas del equipo*, con la lista de nombres. Tocando un nombre ve las
+  tareas de esa persona como ella las ve (sin notas ni mails) y lo que terminó en el día. Es solo para mirar.
 - **La caña**, al costado de la pantalla: elige a alguien y le tira la caña. A esa persona le baja la carnada con
   “¿En qué andás?” y contesta con un toque (sus tareas, “En una reunión”…) o con unas palabras.
 
@@ -146,6 +148,11 @@ Source: GitHub Actions**. En repos privados, GitHub Pages necesita un plan pago 
 `dist/` se puede subir a cualquier hosting estático (Netlify, Cloudflare Pages, un servidor interno…).
 
 ## Cambios
+
+### 1.7
+
+- Portal *Tareas del equipo* para quien supervisa: lista de nombres y las tareas de cada uno, solo para ver.
+- Botón *Enviadas* para todos, con fecha de envío y el avance de cada tarea mandada.
 
 ### 1.6
 

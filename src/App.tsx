@@ -16,6 +16,7 @@ import { TeamModal } from './components/TeamModal';
 import { LaunchedFish, SendFishDialog } from './components/SendFishDialog';
 import { IncomingFish } from './components/IncomingFish';
 import { Pecera } from './components/Pecera';
+import { SentPanel } from './components/SentList';
 import { InstallBanner } from './components/InstallBanner';
 import { TeamBoard } from './components/TeamBoard';
 import { FishingRod } from './components/FishingRod';
@@ -47,6 +48,7 @@ export default function App() {
       <TeamModal />
       <SendFishDialog />
       <Pecera />
+      <SentPanel />
       <IncomingFish />
       <LaunchedFish />
       <TeamBoard />

@@ -6,7 +6,7 @@ import { dayKey, formatMinutes, startOfDay, todayLong } from '../lib/time';
 import { downloadFile, makeBackup, parseBackup } from '../lib/backup';
 import { Fish, MiniFish } from './Fish';
 import { Modal } from './Modal';
-import { IconBoard, IconBook, IconDots, IconDownload, IconUpload, IconUsers } from './Icons';
+import { IconBoard, IconBook, IconDots, IconDownload, IconSend, IconUpload, IconUsers } from './Icons';
 import { useSupervision } from '../store/supervision';
 import { useIncoming, useShared } from '../store/shared';
 import { SpeciesFish } from './Fishes';
@@ -40,10 +40,27 @@ export function Header() {
           <IconBook size={17} /> <span className="hide-sm">Bitácora</span>
         </button>
         <BoardButton />
+        <SentButton />
         <ShareButton />
         <MoreMenu />
       </div>
     </header>
+  );
+}
+
+/** Para todos: las tareas que mandé. */
+function SentButton() {
+  const ready = useShared((s) => s.status === 'ready');
+  if (!ready) return null;
+  return (
+    <button
+      type="button"
+      className="top-btn"
+      onClick={() => useShared.setState({ sentOpen: true })}
+      title="Tareas que mandaste, con fecha de envío"
+    >
+      <IconSend size={16} /> <span className="hide-sm">Enviadas</span>
+    </button>
   );
 }
 
@@ -56,9 +73,9 @@ function BoardButton() {
       type="button"
       className="top-btn"
       onClick={() => useSupervision.setState({ boardOpen: true })}
-      title="Qué tareas tiene cada uno"
+      title="Ver las tareas de cada persona del equipo (solo para mirar)"
     >
-      <IconBoard size={17} /> <span className="hide-sm">Tablero</span>
+      <IconBoard size={17} /> <span className="hide-sm">Equipo</span>
     </button>
   );
 }

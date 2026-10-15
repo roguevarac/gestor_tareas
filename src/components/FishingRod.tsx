@@ -123,7 +123,7 @@ export function FishingRod() {
                 className="btn btn-ghost btn-sm"
                 onClick={() => useSupervision.setState({ rodOpen: false, boardOpen: true })}
               >
-                <IconBoard size={15} /> Tablero
+                <IconBoard size={15} /> Tareas del equipo
               </button>
             </header>
             <p className="rod-pop-hint">Elegí a quién tirarle la caña. Le baja la pregunta y te contesta al toque.</p>

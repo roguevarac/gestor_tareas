@@ -52,6 +52,8 @@ interface SharedState {
   /** Diálogo de entrar (elegir quién sos / armar el equipo). */
   authOpen: boolean;
   peceraOpen: boolean;
+  /** Panel de tareas que mandé. */
+  sentOpen: boolean;
   /** Diálogo de mandar un pez: null cerrado, {} pez nuevo, {task} una tarea mía. */
   sendDialog: { task?: Task } | null;
   /** Peces recibidos que dejé "para después" en esta sesión (no se vuelven a mostrar solos). */
@@ -72,6 +74,7 @@ export const useShared = create<SharedState>()(() => ({
   collapsed: readJSON('mis-tareas:shared-collapsed', {}),
   authOpen: false,
   peceraOpen: false,
+  sentOpen: false,
   sendDialog: null,
   snoozed: {},
 }));
