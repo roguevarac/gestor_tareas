@@ -21,6 +21,7 @@ import { InstallBanner } from './components/InstallBanner';
 import { TeamBoard } from './components/TeamBoard';
 import { FishingRod } from './components/FishingRod';
 import { Bait } from './components/Bait';
+import { UpdateBanner } from './components/UpdateBanner';
 
 export default function App() {
   useEffect(() => syncAcrossTabs(), []);
@@ -54,6 +55,7 @@ export default function App() {
       <TeamBoard />
       <FishingRod />
       <Bait />
+      <UpdateBanner />
       <Toasts />
     </>
   );

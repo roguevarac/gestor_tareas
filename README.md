@@ -149,6 +149,11 @@ Source: GitHub Actions**. En repos privados, GitHub Pages necesita un plan pago 
 
 ## Cambios
 
+### 1.8
+
+- La app instalada busca versiones nuevas sola (al abrirla, al volver a ella y cada 15 minutos). Si llega una
+  mientras la usás, aparece "Hay una versión nueva → Actualizar"; si no la estás usando, se actualiza sola.
+
 ### 1.7
 
 - Portal *Tareas del equipo* para quien supervisa: lista de nombres y las tareas de cada uno, solo para ver.

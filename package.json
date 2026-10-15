@@ -1,7 +1,7 @@
 {
   "name": "mis-tareas",
   "private": true,
-  "version": "1.7.0",
+  "version": "1.8.0",
   "description": "Mis tareas: tareas rápidas, proyectos con subtareas y un balde donde cada tarea terminada cae como una mojarrita plateada.",
   "type": "module",
   "scripts": {

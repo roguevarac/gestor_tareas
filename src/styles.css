@@ -4321,3 +4321,33 @@ body.portal-open {
   border-color: var(--primary);
   color: #fff;
 }
+
+/* Versión nueva */
+
+.update-banner {
+  position: fixed;
+  left: 16px;
+  bottom: calc(16px + env(safe-area-inset-bottom, 0px));
+  z-index: 92;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 8px 8px 14px;
+  border-radius: 16px;
+  background: var(--deep);
+  color: #fff;
+  font-weight: 750;
+  box-shadow: 0 16px 32px -16px rgba(var(--shadow-rgb), 0.7);
+}
+
+.update-banner .btn-primary {
+  background: var(--amber);
+  color: var(--deep);
+}
+
+@media (max-width: 640px) {
+  .update-banner {
+    right: 16px;
+    bottom: calc(132px + env(safe-area-inset-bottom, 0px));
+  }
+}

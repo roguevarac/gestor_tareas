@@ -11,12 +11,15 @@ export default defineConfig(({ mode }) => ({
   base: './',
   define: {
     __APP_VERSION__: JSON.stringify(pkg.version.replace(/\.0$/, '')),
+    __WITH_SW__: JSON.stringify(mode !== 'preview-web'),
   },
   plugins: [
     react(),
     mode !== 'preview-web' &&
       VitePWA({
-        registerType: 'autoUpdate',
+        // La app registra el service worker ella misma (src/lib/updates.ts) y busca versiones nuevas sola.
+        registerType: 'prompt',
+        injectRegister: false,
         includeAssets: ['favicon.svg'],
         manifest: {
           name: 'Mis tareas',
