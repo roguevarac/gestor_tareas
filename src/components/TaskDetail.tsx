@@ -6,6 +6,7 @@ import { useShared } from '../store/shared';
 import { taskOps } from '../lib/taskOps';
 import { firstName } from '../sharing/logic';
 import { SpeciesFish, speciesWithArticle } from './Fishes';
+import { PriorityPicker } from './PriorityChip';
 import { Avatar } from './Avatar';
 import { TONES } from '../lib/tones';
 import { formatTime, todayLong } from '../lib/time';
@@ -38,7 +39,14 @@ export function TaskDetail() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [task?.id]);
 
-  const close = () => openTask(null);
+  const close = () => {
+    const back = useUI.getState().returnToSent;
+    openTask(null);
+    if (back) {
+      useUI.setState({ returnToSent: false });
+      window.setTimeout(() => useShared.setState({ sentOpen: true }), 180);
+    }
+  };
   const open = !!current;
 
   const commitTitle = () => {
@@ -126,6 +134,11 @@ export function TaskDetail() {
           </p>
 
           {shared && <SharedInfoBox task={task} />}
+
+          <section className="detail-section detail-section--first">
+            <h3>Categoría</h3>
+            <PriorityPicker value={task.priority} onChange={(priority) => taskOps.update(task, { priority })} />
+          </section>
 
           <div className="detail-row">
             {shared?.mode !== 'joint' && (
@@ -280,6 +293,13 @@ function SharedInfoBox({ task }: { task: Task }) {
               ))}
             </div>
             <p className="shared-box-hint">Tocá el circulito de cada subtarea para elegir quién se encarga.</p>
+          </>
+        ) : sh.isOwner ? (
+          <>
+            <p className="shared-box-title">
+              La mandaste a {others.map((p) => firstName(p.name)).join(', ') || 'alguien'} con {speciesWithArticle(sh.fish)}.
+            </p>
+            <p className="shared-box-hint">Lo que cambies acá le cambia también a quien la recibió.</p>
           </>
         ) : (
           <p className="shared-box-title">

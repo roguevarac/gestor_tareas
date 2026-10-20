@@ -158,3 +158,21 @@ describe('subtareas y avisos', () => {
     expect(needsLogEntry(d, 'juan', [])).toBe(false);
   });
 });
+
+describe('categorías', () => {
+  it('la categoría viaja con el pez y llega a quien la recibe', () => {
+    const [d] = buildDocs(
+      { mode: 'assigned', kind: 'quick', title: 'X', tone: 0, fish: 'dorado', priority: 'iu' },
+      ana,
+      [juan],
+    );
+    expect(d.priority).toBe('iu');
+    const t = toTask(applyPatch(asDoc(d), { 'invites.juan': 'accepted' }), 'juan');
+    expect(t.priority).toBe('iu');
+  });
+
+  it('sin categoría queda en null', () => {
+    const [d] = buildDocs({ mode: 'joint', kind: 'project', title: 'X', tone: 0, fish: 'koi' }, ana, [juan]);
+    expect(d.priority).toBeNull();
+  });
+});

@@ -8,6 +8,7 @@ import { firstName } from '../sharing/logic';
 import { TONES } from '../lib/tones';
 import { Modal } from './Modal';
 import { SPECIES, SpeciesFish, speciesWithArticle } from './Fishes';
+import { fishOfPriority, priorityOfFish } from '../lib/priority';
 import { Avatar } from './Avatar';
 import { IconCopy, IconPlus, IconSearch, IconSend, IconX } from './Icons';
 import { copyText } from './MailLinks';
@@ -54,7 +55,7 @@ function SendForm() {
   const [kind, setKind] = useState<TaskKind>(source?.kind ?? 'quick');
   const [mode, setMode] = useState<'assigned' | 'joint'>('assigned');
   const [to, setTo] = useState<string[]>([]);
-  const [fish, setFish] = useState<FishKind>('mojarrita');
+  const [fish, setFish] = useState<FishKind>(() => fishOfPriority(source?.priority) ?? 'mojarrita');
   const [message, setMessage] = useState('');
   const [query, setQuery] = useState('');
   const [subs, setSubs] = useState<DraftSub[]>(() =>
@@ -108,6 +109,7 @@ function SendForm() {
         notes: source?.notes ?? '',
         tone: source?.tone ?? useTasks.getState().toneCursor % TONES.length,
         fish,
+        priority: priorityOfFish(fish),
         message,
         subtasks: showSubs ? subs.map((s) => ({ title: s.title, assignee: s.assignee, done: s.done })) : [],
         mails: source?.mails ?? [],
@@ -311,8 +313,8 @@ function SendForm() {
 
       {/* Pez */}
       <section className="send-section">
-        <h3>En qué pez</h3>
-        <div className="species-grid" role="radiogroup" aria-label="Pez">
+        <h3>Categoría (cada una viaja en su pez)</h3>
+        <div className="species-grid" role="radiogroup" aria-label="Categoría y pez">
           {SPECIES.map((s) => (
             <button
               key={s.kind}
@@ -323,8 +325,8 @@ function SendForm() {
               onClick={() => setFish(s.kind)}
             >
               <SpeciesFish kind={s.kind} width={92} swim={fish === s.kind} />
-              <strong>{s.name}</strong>
-              <span>{s.says}</span>
+              <strong>{s.says}</strong>
+              <span>{s.name}</span>
             </button>
           ))}
         </div>

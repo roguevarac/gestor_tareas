@@ -4,19 +4,22 @@ import { Fish, FISH_RATIO } from './Fish';
 
 /** Los peces que se pueden mandar, con lo que "dicen". */
 export const SPECIES: { kind: FishKind; name: string; says: string }[] = [
-  { kind: 'mojarrita', name: 'Mojarrita', says: 'Algo rápido' },
-  { kind: 'dorado', name: 'Dorado', says: 'Importante' },
-  { kind: 'surubi', name: 'Surubí', says: 'Algo grande' },
-  { kind: 'koi', name: 'Koi', says: 'Un favorcito' },
-  { kind: 'tararira', name: 'Tararira', says: '¡Urgente!' },
+  { kind: 'dorado', name: 'Dorado', says: 'Importante y urgente' },
+  { kind: 'koi', name: 'Koi', says: 'Importante, no urgente' },
+  { kind: 'mojarrita', name: 'Mojarrita', says: 'Urgente, no importante' },
+  { kind: 'tararira', name: 'Tararira', says: 'Un favorcito' },
 ];
 
-export const speciesName = (k: FishKind | undefined) => SPECIES.find((s) => s.kind === k)?.name ?? 'Mojarrita';
+/** Peces de versiones anteriores (se siguen viendo en lo que ya se mandó). */
+const OLD_NAMES: Partial<Record<FishKind, string>> = { surubi: 'Surubí' };
+
+export const speciesName = (k: FishKind | undefined) =>
+  SPECIES.find((s) => s.kind === k)?.name ?? (k && OLD_NAMES[k]) ?? 'Mojarrita';
 const FEMININE: FishKind[] = ['mojarrita', 'tararira'];
 
 /** Artículo + nombre: "un dorado", "una mojarrita". */
 export const speciesWithArticle = (k: FishKind | undefined) =>
-  `${FEMININE.includes(SPECIES.some((s) => s.kind === k) ? k! : 'mojarrita') ? 'una' : 'un'} ${speciesName(k).toLowerCase()}`;
+  `${FEMININE.includes(SPECIES.some((s) => s.kind === k) || (k && OLD_NAMES[k]) ? k! : 'mojarrita') ? 'una' : 'un'} ${speciesName(k).toLowerCase()}`;
 
 interface Props {
   kind?: FishKind;

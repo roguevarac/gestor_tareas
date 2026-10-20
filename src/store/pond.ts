@@ -11,8 +11,20 @@ export const usePond = create<{
   draggingId: string | null;
   phase: PondPhase;
   bucketHot: boolean;
+  /** Cuadrante (de la vista Matriz) que está debajo del pez: 'none' = "Sin categoría". */
+  hotQuadrant: string | null;
   splashKey: number;
-}>()(() => ({ draggingId: null, phase: 'idle', bucketHot: false, splashKey: 0 }));
+}>()(() => ({ draggingId: null, phase: 'idle', bucketHot: false, hotQuadrant: null, splashKey: 0 }));
+
+/** El cuadrante de la Matriz que está en ese punto de la pantalla (o null). */
+export function quadrantAt(x: number, y: number): string | null {
+  // Por geometría: mientras se arrastra, la app no recibe el puntero (pointer-events: none).
+  for (const el of document.querySelectorAll<HTMLElement>('[data-quadrant]')) {
+    const r = el.getBoundingClientRect();
+    if (x >= r.left && x <= r.right && y >= r.top && y <= r.bottom) return el.dataset.quadrant ?? null;
+  }
+  return null;
+}
 
 let bucketEl: HTMLElement | null = null;
 

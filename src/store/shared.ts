@@ -443,7 +443,7 @@ export async function recoverSent(id: string) {
   const me = get().memberId;
   if (!backend || !d || d.from !== me) return;
   const tasks = useTasks.getState();
-  const newId_ = tasks.addTask(d.kind, d.title);
+  const newId_ = tasks.addTask(d.kind, d.title, d.priority ?? null);
   tasks.updateTask(newId_, {
     notes: d.notes,
     tone: d.tone,
@@ -502,6 +502,7 @@ export const sharedOps = {
     if (rest.title !== undefined) allowed.title = rest.title;
     if (rest.notes !== undefined) allowed.notes = rest.notes;
     if (rest.tone !== undefined) allowed.tone = rest.tone;
+    if (rest.priority !== undefined) allowed.priority = rest.priority;
     if (rest.kind !== undefined && docById(id)?.mode === 'assigned') allowed.kind = rest.kind;
     if (Object.keys(allowed).length) patchDoc(id, allowed);
   },

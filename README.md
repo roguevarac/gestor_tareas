@@ -42,7 +42,7 @@ Es para un equipo de trabajo, sin cuentas de mail: cada persona tiene una contra
 Después:
 
 - **Compartir con… / Mandar un pez**: elegís la tarea (nueva, o una tuya desde su detalle), a quién, el pez
-  (todos de agua dulce: mojarrita = algo rápido, dorado = importante, surubí = algo grande, koi = un favorcito, tararira = ¡urgente!)
+  (cada pez es una categoría: ver más abajo)
   y unas palabras si querés.
   - **Que la haga**: la tarea pasa a ser solo de la otra persona. Si se la mandás a varias, le llega una a cada una.
     Cuando la tira al balde, te llega el aviso.
@@ -51,6 +51,7 @@ Después:
   - Un proyecto "que la haga" para varias personas puede llevar un responsable por subtarea: les llega un solo
     proyecto a todos (sin responsables, a cada uno le llega su copia).
 - **Enviadas** (arriba, para todos): las tareas que mandaste, con fecha de envío, a quién, si aceptaron y cómo van.
+  Con **Editar** cambiás la tarea (nombre, categoría, subtareas, notas…) y el cambio le llega a quien la recibió.
 - **Recibir**: el pez llega nadando con la tarea. *Aceptar* la pone en tu lista, *No la tomo* le avisa a quien la
   mandó (y la puede recuperar), *Después* la deja esperando en la pecera.
 
@@ -71,6 +72,22 @@ Modo de prueba sin Firebase: abrir la app con `?demo=ana` en una pestaña y `?de
    [`src/sharing/config.ts`](src/sharing/config.ts).
 2. **Authentication** → Comenzar → **Método de acceso** → habilitar **Anónimo**.
 3. Reglas: `firebase deploy --only firestore:rules` (usa [`firestore.rules`](firestore.rules) y `firebase.json`).
+
+## Categorías
+
+Cada tarea puede tener una categoría (inspirada en la matriz de Eisenhower), y cada categoría tiene su pez:
+
+| Categoría | Pez |
+| --- | --- |
+| Importante y urgente | dorado |
+| Importante, no urgente | koi |
+| Urgente, no importante | mojarrita |
+| Favorcito | tararira |
+
+- Se elige en el detalle de la tarea, o en la vista **Por categoría** (arriba de las listas): ahí están los cuatro
+  cuadrantes y para cambiar una tarea de categoría se la arrastra (como pez) a otro cuadrante. Lo que no tiene
+  categoría queda arriba, en *Sin categoría*.
+- Al mandar una tarea, el pez que elegís es su categoría: le llega a la otra persona en ese cuadrante.
 
 ## Vincular mails de Outlook
 
@@ -148,6 +165,13 @@ Source: GitHub Actions**. En repos privados, GitHub Pages necesita un plan pago 
 `dist/` se puede subir a cualquier hosting estático (Netlify, Cloudflare Pages, un servidor interno…).
 
 ## Cambios
+
+### 2.0
+
+- Categorías: importante y urgente, importante no urgente, urgente no importante y favorcito, con vista
+  *Por categoría* (cuadrantes) y arrastrar para clasificar.
+- Los peces son las categorías: dorado, koi, mojarrita y tararira (favorcito).
+- Desde *Enviadas* se puede editar lo que mandaste.
 
 ### 1.9
 

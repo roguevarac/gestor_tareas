@@ -1,4 +1,4 @@
-import type { FishKind, LogEntry, Task, TaskKind } from '../types';
+import type { FishKind, LogEntry, Priority, Task, TaskKind } from '../types';
 import type { DocPatch, InviteState, NewSharedDoc, SharedDoc, SharedMode, SharedSubtask } from './types';
 import { uid as newId } from '../lib/id';
 
@@ -42,6 +42,7 @@ export function toTask(d: SharedDoc, me: string, collapsed = false): Task {
     title: d.title,
     notes: d.notes ?? '',
     tone: d.tone ?? 0,
+    priority: d.priority ?? null,
     createdAt: d.createdAt,
     mails: d.mails ?? [],
     subtasks: (d.subtasks ?? []).map((s) => ({
@@ -76,6 +77,7 @@ export interface SendInput {
   notes?: string;
   tone: number;
   fish: FishKind;
+  priority?: Priority | null;
   message?: string;
   subtasks?: { title: string; assignee?: string | null; done?: boolean }[];
   mails?: Task['mails'];
@@ -108,6 +110,7 @@ export function buildDocs(
       notes: input.notes ?? '',
       tone: input.tone,
       fish: input.fish,
+      priority: input.priority ?? null,
       message: (input.message ?? '').trim(),
       from: me.uid,
       participants: [me.uid, ...people.map((p) => p.uid)],

@@ -19,6 +19,11 @@ export interface Subtask {
   doneBy?: string | null;
 }
 
+/**
+ * Categoría de la tarea: importante y urgente · importante, no urgente · urgente, no importante · favorcito.
+ */
+export type Priority = 'iu' | 'inu' | 'uni' | 'fav';
+
 /** Especies de pez que se pueden mandar. */
 /** (pez payaso y pez globo eran de versiones anteriores: se ven como mojarrita) */
 export type FishKind = 'mojarrita' | 'dorado' | 'surubi' | 'koi' | 'tararira' | 'payaso' | 'globo';
@@ -56,6 +61,8 @@ export interface Task {
   pendingMinutes?: number;
   /** Proyectos: subtareas plegadas. */
   collapsed?: boolean;
+  /** Categoría (null o ausente: sin categoría). */
+  priority?: Priority | null;
   /** Solo en tareas compartidas con otras personas. */
   shared?: SharedInfo;
 }

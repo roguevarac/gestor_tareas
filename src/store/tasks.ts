@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import { createJSONStorage, persist } from 'zustand/middleware';
-import type { LogEntry, MailLink, Task, TaskKind } from '../types';
+import type { LogEntry, MailLink, Priority, Task, TaskKind } from '../types';
 import { uid } from '../lib/id';
 import { TONES } from '../lib/tones';
 import { cleanupV1 } from '../lib/migrate';
@@ -24,7 +24,7 @@ export interface TasksState {
   log: LogEntry[];
   toneCursor: number;
 
-  addTask(kind: TaskKind, title: string): string;
+  addTask(kind: TaskKind, title: string, priority?: Priority | null): string;
   updateTask(id: string, patch: Partial<Omit<Task, 'id'>>): void;
   deleteTask(id: string): void;
 
@@ -57,7 +57,7 @@ export const useTasks = create<TasksState>()(
       log: [],
       toneCursor: 0,
 
-      addTask(kind, title) {
+      addTask(kind, title, priority = null) {
         const id = uid();
         const cursor = get().toneCursor;
         const task: Task = {
@@ -70,6 +70,7 @@ export const useTasks = create<TasksState>()(
           createdAt: Date.now(),
           mails: [],
           subtasks: [],
+          priority,
         };
         set((s) => ({ tasks: [task, ...s.tasks], toneCursor: s.toneCursor + 1 }));
         return id;

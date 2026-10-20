@@ -2740,7 +2740,7 @@ textarea.log-comment {
 
 .species-grid {
   display: grid;
-  grid-template-columns: repeat(5, minmax(0, 1fr));
+  grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 8px;
 }
 
@@ -3128,7 +3128,7 @@ textarea.log-comment {
   }
 
   .species-grid {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
   .pecera-btn {
@@ -4349,5 +4349,202 @@ body.portal-open {
   .update-banner {
     right: 16px;
     bottom: calc(132px + env(safe-area-inset-bottom, 0px));
+  }
+}
+
+/* Categorías */
+
+.prio-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  height: 22px;
+  padding: 0 8px;
+  border-radius: 999px;
+  font-size: 0.72rem;
+  font-weight: 850;
+  white-space: nowrap;
+  background: color-mix(in srgb, var(--prio) 14%, white);
+  color: color-mix(in srgb, var(--prio) 80%, black);
+}
+
+.prio-chip--card {
+  background: rgba(255, 255, 255, 0.9);
+  color: color-mix(in srgb, var(--prio) 85%, black);
+  align-self: center;
+}
+
+.prio-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--prio);
+  flex: none;
+}
+
+.prio-picker {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px;
+}
+
+.prio-option {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 9px 12px;
+  border-radius: 12px;
+  border: 1.5px solid var(--line);
+  background: var(--surface-2);
+  font-weight: 750;
+  text-align: left;
+  color: var(--ink-soft);
+  transition:
+    border-color 0.15s,
+    background 0.15s;
+}
+
+.prio-option:hover {
+  border-color: var(--prio);
+}
+
+.prio-option.is-on {
+  border-color: var(--prio);
+  background: var(--prio-soft);
+  color: var(--ink);
+  box-shadow: 0 0 0 3px var(--prio-soft);
+}
+
+.detail-section--first {
+  margin-top: 14px;
+}
+
+.view-switch {
+  display: inline-flex;
+  margin: 0 0 16px;
+  background: var(--glass);
+  border: 1px solid var(--pond-line);
+}
+
+/* Vista Matriz */
+
+.matrix {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 16px;
+}
+
+.quadrant {
+  position: relative;
+  border-radius: 24px;
+  padding: 14px;
+  border: 1.5px solid color-mix(in srgb, var(--prio) 30%, white);
+  background:
+    linear-gradient(180deg, var(--prio-soft), transparent 70%),
+    var(--glass);
+  backdrop-filter: blur(6px);
+  min-height: 220px;
+  transition:
+    border-color 0.15s,
+    box-shadow 0.15s,
+    transform 0.15s;
+}
+
+.matrix-wrap.is-dragging .quadrant,
+.matrix-wrap.is-dragging .loose {
+  border-style: dashed;
+}
+
+.quadrant.is-hot,
+.loose.is-hot {
+  border-color: var(--prio, var(--teal));
+  border-style: solid !important;
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--prio, var(--teal)) 25%, transparent);
+  transform: scale(1.01);
+}
+
+.quadrant-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+
+.quadrant-head .fish {
+  flex: none;
+}
+
+.quadrant-title {
+  flex: 1;
+  min-width: 0;
+}
+
+.quadrant-title h2 {
+  margin: 0;
+  font-size: 1.08rem;
+  font-weight: 850;
+  color: color-mix(in srgb, var(--prio) 70%, var(--ink));
+}
+
+.quadrant-title p {
+  margin: 1px 0 0;
+  font-size: 0.8rem;
+  color: var(--ink-faint);
+  font-weight: 650;
+}
+
+.quadrant-add {
+  margin-bottom: 10px;
+}
+
+.quadrant-empty {
+  margin: 6px 0;
+  text-align: center;
+  color: var(--ink-faint);
+  font-weight: 650;
+  font-size: 0.88rem;
+}
+
+.quadrant .prio-chip--card {
+  display: none;
+}
+
+.loose {
+  margin-bottom: 16px;
+  border-radius: 24px;
+  padding: 14px;
+  border: 1.5px solid var(--pond-line);
+  background: var(--glass);
+  transition:
+    border-color 0.15s,
+    box-shadow 0.15s;
+}
+
+.loose .pond-head {
+  margin-bottom: 0;
+  flex-wrap: wrap;
+}
+
+.loose-hint {
+  font-size: 0.82rem;
+  color: var(--ink-faint);
+  font-weight: 650;
+}
+
+.loose-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 10px;
+  margin-top: 12px;
+  align-items: start;
+}
+
+@media (max-width: 760px) {
+  .matrix {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .prio-picker {
+    grid-template-columns: 1fr;
   }
 }

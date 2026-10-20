@@ -10,6 +10,7 @@ import { IconChevron, IconMail, IconNote } from './Icons';
 import { taskOps } from '../lib/taskOps';
 import { firstName } from '../sharing/logic';
 import { SpeciesFish, speciesName } from './Fishes';
+import { PriorityChip } from './PriorityChip';
 import { Avatar } from './Avatar';
 
 const cardMotion = (swimming: boolean) => ({
@@ -58,9 +59,10 @@ function MailBadge({ task }: { task: Task }) {
 
 /** Mail y notas, solo si la tarea los tiene. */
 function CardBadges({ task }: { task: Task }) {
-  if (!task.mails.length && !task.notes) return null;
+  if (!task.mails.length && !task.notes && !task.priority) return null;
   return (
     <div className="card-badges">
+      <PriorityChip priority={task.priority} />
       <MailBadge task={task} />
       {task.notes && (
         <span className="card-badge card-badge--static" title={task.notes}>

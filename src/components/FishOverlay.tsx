@@ -1,9 +1,9 @@
 import { useEffect, useRef, useState } from 'react';
 import { animate, motion, useMotionValue, useTransform } from 'motion/react';
-import type { Task } from '../types';
+import type { Priority, Task } from '../types';
 import { FISH_RATIO } from './Fish';
 import { SpeciesFish } from './Fishes';
-import { bucketMouth, bucketRect, isOverBucket, registerPondController, usePond } from '../store/pond';
+import { bucketMouth, bucketRect, isOverBucket, quadrantAt, registerPondController, usePond } from '../store/pond';
 import { taskOps } from '../lib/taskOps';
 import { useUI } from '../store/ui';
 import { toneStyle } from '../lib/tones';
@@ -173,6 +173,8 @@ export function FishOverlay() {
         animate(fy, cy, FOLLOW);
         const hot = isOverBucket(cx, cy);
         if (usePond.getState().bucketHot !== hot) usePond.setState({ bucketHot: hot });
+        const quad = hot ? null : quadrantAt(cx, cy);
+        if (usePond.getState().hotQuadrant !== quad) usePond.setState({ hotQuadrant: quad });
         const now = performance.now();
         if (dist > 2 && now - lastBubble > 80) {
           lastBubble = now;
@@ -196,7 +198,15 @@ export function FishOverlay() {
         window.removeEventListener('touchcancel', onUp);
         window.removeEventListener('keydown', onKey);
         window.removeEventListener('blur', onBlur);
+        const quad = usePond.getState().hotQuadrant;
+        usePond.setState({ hotQuadrant: null });
         if (!cancel && isOverBucket(lastX, lastY)) void dive(task);
+        else if (!cancel && quad) {
+          // Soltada en un cuadrante de la Matriz: cambia de categoría y nada a su nuevo lugar.
+          const priority = quad === 'none' ? null : (quad as Priority);
+          if ((task.priority ?? null) !== priority) taskOps.update(task, { priority });
+          window.setTimeout(() => void swimBack(task, origin), 60);
+        }
         else void swimBack(task, origin);
       };
       const onUp = () => end(false);

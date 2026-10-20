@@ -10,6 +10,8 @@ export interface Toast {
 
 interface UIState {
   openTaskId: string | null;
+  /** Al cerrar el detalle, volver al panel "Enviadas" (se abrió desde ahí). */
+  returnToSent: boolean;
   logOpen: boolean;
   helpOpen: boolean;
   catchEntryId: string | null;
@@ -18,7 +20,7 @@ interface UIState {
   focusSubtasksOf: string | null;
   toasts: Toast[];
 
-  openTask(id: string | null): void;
+  openTask(id: string | null, opts?: { fromSent?: boolean }): void;
   setLogOpen(open: boolean): void;
   setHelpOpen(open: boolean): void;
   showCatch(entryId: string | null): void;
@@ -32,6 +34,7 @@ let toastSeq = 0;
 
 export const useUI = create<UIState>()((set, get) => ({
   openTaskId: null,
+  returnToSent: false,
   logOpen: false,
   helpOpen: false,
   catchEntryId: null,
@@ -39,7 +42,7 @@ export const useUI = create<UIState>()((set, get) => ({
   focusSubtasksOf: null,
   toasts: [],
 
-  openTask: (id) => set({ openTaskId: id }),
+  openTask: (id, opts) => set({ openTaskId: id, ...(id ? { returnToSent: !!opts?.fromSent } : {}) }),
   setLogOpen: (logOpen) => set({ logOpen }),
   setHelpOpen: (helpOpen) => set({ helpOpen }),
   showCatch: (catchEntryId) => set({ catchEntryId }),

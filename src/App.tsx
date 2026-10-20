@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { syncAcrossTabs } from './store/tasks';
 import { Ocean } from './components/Ocean';
 import { Header } from './components/Header';
@@ -22,11 +22,13 @@ import { TeamBoard } from './components/TeamBoard';
 import { FishingRod } from './components/FishingRod';
 import { Bait } from './components/Bait';
 import { UpdateBanner } from './components/UpdateBanner';
+import { Matrix, readView, ViewSwitch, type View } from './components/Matrix';
 
 export default function App() {
   useEffect(() => syncAcrossTabs(), []);
   useEffect(() => void startSharing(), []);
   useIncomingMail();
+  const [view, setView] = useState<View>(readView);
 
   return (
     <>
@@ -34,10 +36,17 @@ export default function App() {
       <div className="app">
         <Header />
         <InstallBanner />
-        <main className="ponds">
-          <Pond kind="quick" />
-          <Pond kind="project" />
-        </main>
+        <ViewSwitch view={view} onChange={setView} />
+        {view === 'matrix' ? (
+          <main>
+            <Matrix />
+          </main>
+        ) : (
+          <main className="ponds">
+            <Pond kind="quick" />
+            <Pond kind="project" />
+          </main>
+        )}
       </div>
       <Bucket />
       <CatchCard />

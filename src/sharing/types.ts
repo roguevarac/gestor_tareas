@@ -1,4 +1,4 @@
-import type { FishKind, MailLink, TaskKind } from '../types';
+import type { FishKind, MailLink, Priority, TaskKind } from '../types';
 
 export type InviteState = 'owner' | 'pending' | 'accepted' | 'declined' | 'left';
 export type SharedMode = 'assigned' | 'joint';
@@ -22,6 +22,7 @@ export interface BoardTask {
   createdAt: number;
   /** Color de la tarjeta (como la ve la persona). */
   tone?: number;
+  priority?: Priority | null;
   /** Compartida: conjunta o mandada por alguien. */
   shared?: 'joint' | 'assigned' | null;
   from?: string | null;
@@ -66,6 +67,8 @@ export interface SharedDoc {
   notes: string;
   tone: number;
   fish: FishKind;
+  /** Categoría de la tarea (la elige quien la manda con el pez; después se puede cambiar). */
+  priority?: Priority | null;
   /** Mensaje que acompaña al pez. */
   message: string;
   from: string;

@@ -6,7 +6,9 @@ import { dateTimeLabel } from '../lib/time';
 import { Modal } from './Modal';
 import { SpeciesFish } from './Fishes';
 import { Avatar } from './Avatar';
-import { IconCheck, IconSearch, IconSend } from './Icons';
+import { IconCheck, IconEdit, IconSearch, IconSend } from './Icons';
+import { useUI } from '../store/ui';
+import { PriorityChip } from './PriorityChip';
 
 type Filter = 'open' | 'done' | 'all';
 
@@ -104,7 +106,9 @@ export function SentItem({ doc }: { doc: SharedDoc }) {
     <li className={`pecera-item ${finished ? 'is-done' : ''}`}>
       <SpeciesFish kind={doc.fish} width={58} swim={false} />
       <div className="pecera-main">
-        <p className="pecera-title">{doc.title}</p>
+        <p className="pecera-title">
+          {doc.title} <PriorityChip priority={doc.priority} onCard={false} />
+        </p>
         <p className="sent-date">Enviada: {dateTimeLabel(doc.createdAt)}</p>
         <p className="pecera-meta">
           {doc.mode === 'joint' ? 'Conjunta' : 'Para que la haga'}
@@ -142,6 +146,16 @@ export function SentItem({ doc }: { doc: SharedDoc }) {
         )}
         {finished && doc.doneAt && <p className="sent-date">Terminada: {dateTimeLabel(doc.doneAt)}</p>}
         <div className="pecera-actions">
+          <button
+            type="button"
+            className="btn btn-secondary btn-sm"
+            onClick={() => {
+              useShared.setState({ sentOpen: false });
+              useUI.getState().openTask(doc.id, { fromSent: true });
+            }}
+          >
+            <IconEdit size={14} /> Editar
+          </button>
           {doc.mode === 'assigned' && (allDeclined || nobodyAnswered) && !finished && (
             <button type="button" className="btn btn-secondary btn-sm" onClick={() => void recoverSent(doc.id)}>
               Recuperarla

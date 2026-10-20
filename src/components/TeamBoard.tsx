@@ -11,6 +11,7 @@ import { Avatar } from './Avatar';
 import { MiniFish } from './Fish';
 import { IconCheck, IconSearch, IconUsers } from './Icons';
 import { RodIcon } from './FishingRod';
+import { PriorityChip } from './PriorityChip';
 
 /**
  * Portal "Tareas del equipo" (para todos): una pantalla aparte para mirar qué tiene cada uno.
@@ -256,6 +257,7 @@ function ReadOnlyCard({ task }: { task: BoardTask }) {
     <article className={`card card--${task.kind} card--readonly`} style={toneStyle(task.tone ?? 0)} aria-label={task.title}>
       <div className="card-head">
         <h3 className="card-title">{task.title}</h3>
+        <PriorityChip priority={task.priority} />
         {total > 0 && (
           <span className="progress-count">
             {done}/{total}
