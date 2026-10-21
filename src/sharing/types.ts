@@ -12,7 +12,11 @@ export interface Profile {
   supervisor?: boolean;
   /** Ya tiene contraseña para entrar. */
   hasPassword?: boolean;
+  /** Oficina (país) en la que trabaja. */
+  country?: Country | null;
 }
+
+export type Country = 'AR' | 'CL' | 'UY';
 
 /** Lo que cada persona tiene en el agua, para el tablero del equipo (sin notas ni mails). */
 export interface BoardTask {
@@ -119,12 +123,12 @@ export interface Backend {
   becomeAdmin(deviceId: string, code: string): Promise<void>;
   watchMembers(cb: (members: Profile[]) => void, onError: (e: unknown) => void): () => void;
   addMember(
-    m: { name: string; email: string; supervisor?: boolean },
+    m: { name: string; email: string; country?: Country | null },
     hashFor: (memberId: string) => Promise<string>,
   ): Promise<string>;
   /** Cambiar la contraseña (quien administra, o la persona misma). */
   setPassword(memberId: string, hash: string, byAdmin: boolean): Promise<void>;
-  updateMember(id: string, m: { name: string; email: string; supervisor?: boolean }): Promise<void>;
+  updateMember(id: string, m: { name: string; email: string; country?: Country | null }): Promise<void>;
   saveBoard(board: Board): Promise<void>;
   watchBoards(cb: (boards: Board[]) => void, onError: (e: unknown) => void): () => void;
   sendPing(p: Omit<Ping, 'id'>): Promise<string>;

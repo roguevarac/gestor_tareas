@@ -57,7 +57,8 @@ service cloud.firestore {
     match /members/{id} {
       allow read: if signedIn();
       allow create, update: if isAdminAfter()
-        && request.resource.data.keys().hasOnly(['name', 'email', 'createdAt', 'supervisor', 'hasPassword'])
+        && request.resource.data.keys().hasOnly(['name', 'email', 'createdAt', 'supervisor', 'hasPassword', 'country'])
+        && request.resource.data.get('country', null) in [null, 'AR', 'CL', 'UY']
         && request.resource.data.get('supervisor', false) is bool
         && request.resource.data.get('hasPassword', false) is bool
         && request.resource.data.name is string
@@ -102,10 +103,10 @@ service cloud.firestore {
       allow delete: if isMember() && me() == memberId;
     }
 
-    // La caña: "¿En qué andás?". La tira quien supervisa; contesta solo a quien le llegó.
+    // La caña: "¿En qué andás?". La puede tirar cualquiera del equipo; contesta solo a quien le llegó.
     match /pings/{id} {
       allow read: if isMember();
-      allow create: if isSupervisor()
+      allow create: if isMember()
         && request.resource.data.from == me()
         && request.resource.data.keys().hasOnly(
           ['from', 'to', 'fromName', 'toName', 'question', 'createdAt', 'answer', 'answeredAt'])

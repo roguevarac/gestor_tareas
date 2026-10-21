@@ -1,16 +1,17 @@
 import { useEffect, useMemo, useState } from 'react';
 import { AnimatePresence, motion } from 'motion/react';
-import type { Board, BoardTask, Ping, Profile } from '../sharing/types';
+import type { Board, BoardTask, Country, Ping, Profile } from '../sharing/types';
 import { useShared } from '../store/shared';
 import { castLine, useMyCasts, useSupervision } from '../store/supervision';
 import { useUI } from '../store/ui';
 import { firstName } from '../sharing/logic';
 import { toneStyle } from '../lib/tones';
-import { ago, formatMinutes, formatTime, startOfDay } from '../lib/time';
+import { ago, formatTime, startOfDay } from '../lib/time';
 import { Avatar } from './Avatar';
 import { MiniFish } from './Fish';
-import { IconCheck, IconSearch, IconUsers } from './Icons';
+import { IconCheck, IconSearch } from './Icons';
 import { RodIcon } from './FishingRod';
+import { COUNTRIES, Flag } from './Flags';
 import { PriorityChip } from './PriorityChip';
 
 /**
@@ -54,10 +55,12 @@ export function TeamBoard() {
   );
 }
 
+type Office = Country | 'none';
+
 function Portal() {
   const boards = useSupervision((s) => s.boards);
   const users = useShared((s) => s.users);
-  const [selected, setSelected] = useState<string | 'all'>('all');
+  const myCountry = useShared((s) => s.me?.country ?? null);
   const [query, setQuery] = useState('');
   const today = startOfDay();
 
@@ -68,9 +71,22 @@ function Portal() {
         .map((u) => ({ user: u, board: boards.find((b) => b.memberId === u.uid) })),
     [users, boards],
   );
-  const total = boards.reduce((a, b) => a + b.tasks.length, 0);
-  const doneToday = boards.reduce((a, b) => a + b.doneToday.filter((d) => d.completedAt >= today).length, 0);
-  const current = people.find((p) => p.user.uid === selected);
+
+  // Oficinas: Argentina, Chile y Uruguay; "Sin oficina" solo si hay alguien sin asignar.
+  const offices: { key: Office; name: string; count: number }[] = [
+    ...COUNTRIES.map((c) => ({ key: c.code as Office, name: c.name, count: people.filter((p) => p.user.country === c.code).length })),
+    { key: 'none' as Office, name: 'Sin oficina', count: people.filter((p) => !p.user.country).length },
+  ].filter((o) => o.key !== 'none' || o.count > 0);
+
+  const firstWithPeople = offices.find((o) => o.count > 0)?.key ?? 'AR';
+  const [office, setOffice] = useState<Office>(() => myCountry ?? firstWithPeople);
+  const inOffice = people.filter((p) => (office === 'none' ? !p.user.country : p.user.country === office));
+  const [selected, setSelected] = useState<string | null>(null);
+  const current = inOffice.find((p) => p.user.uid === selected) ?? inOffice[0];
+
+  const officeBoards = inOffice.map((p) => p.board).filter(Boolean) as Board[];
+  const total = officeBoards.reduce((a, b) => a + b.tasks.length, 0);
+  const doneToday = officeBoards.reduce((a, b) => a + b.doneToday.filter((d) => d.completedAt >= today).length, 0);
 
   return (
     <div className="portal-inner">
@@ -90,29 +106,40 @@ function Portal() {
         </label>
       </header>
 
+      <div className="office-tabs" role="tablist" aria-label="Oficina">
+        {offices.map((o) => (
+          <button
+            key={o.key}
+            type="button"
+            role="tab"
+            aria-selected={office === o.key}
+            className={`office-tab ${office === o.key ? 'is-on' : ''}`}
+            onClick={() => {
+              setOffice(o.key);
+              setSelected(null);
+            }}
+          >
+            {o.key !== 'none' ? <Flag country={o.key} width={26} /> : <span className="country-none">🌎</span>}
+            <span>{o.name}</span>
+            <span className="pond-count">{o.count}</span>
+          </button>
+        ))}
+      </div>
+
       <div className="portal-body">
         <nav className="portal-people" aria-label="Personas">
-          <button
-            type="button"
-            className={`portal-person ${selected === 'all' ? 'is-on' : ''}`}
-            onClick={() => setSelected('all')}
-            aria-current={selected === 'all'}
-          >
-            <span className="portal-all-icon">
-              <IconUsers size={16} />
-            </span>
-            <span className="portal-person-main">
-              <strong>Todo el equipo</strong>
-              <small>{users.length} personas</small>
-            </span>
-          </button>
-          {people.map(({ user, board }) => (
+          {inOffice.length === 0 && (
+            <p className="portal-empty">
+              Nadie en esta oficina todavía. Quien administra el equipo asigna la oficina de cada uno en Pecera → Equipo.
+            </p>
+          )}
+          {inOffice.map(({ user, board }) => (
             <button
               key={user.uid}
               type="button"
-              className={`portal-person ${selected === user.uid ? 'is-on' : ''}`}
+              className={`portal-person ${current?.user.uid === user.uid ? 'is-on' : ''}`}
               onClick={() => setSelected(user.uid)}
-              aria-current={selected === user.uid}
+              aria-current={current?.user.uid === user.uid}
             >
               <Avatar uid={user.uid} name={user.name} size={30} />
               <span className="portal-person-main">
@@ -124,22 +151,7 @@ function Portal() {
         </nav>
 
         <main className="portal-main">
-          {current ? (
-            <PersonView user={current.user} board={current.board} query={query} />
-          ) : (
-            <div className="board-cols">
-              {people
-                .filter(
-                  ({ user, board }) =>
-                    !query.trim() ||
-                    user.name.toLowerCase().includes(query.trim().toLowerCase()) ||
-                    board?.tasks.some((t) => matches(t, query)),
-                )
-                .map(({ user, board }) => (
-                  <Column key={user.uid} user={user} board={board} query={query} onOpen={() => setSelected(user.uid)} />
-                ))}
-            </div>
-          )}
+          {current && <PersonView user={current.user} board={current.board} query={query} />}
         </main>
       </div>
     </div>
@@ -154,9 +166,8 @@ function matches(t: BoardTask, q: string) {
 
 function CastButton({ user }: { user: Profile }) {
   const me = useShared((s) => s.memberId);
-  const supervisor = useShared((s) => !!s.me?.supervisor);
   const toast = useUI((s) => s.toast);
-  if (user.uid === me || !supervisor) return null;
+  if (user.uid === me) return null;
   return (
     <button
       type="button"
@@ -180,7 +191,6 @@ function PersonView({ user, board, query }: { user: Profile; board?: Board; quer
   const quick = tasks.filter((t) => t.kind === 'quick');
   const projects = tasks.filter((t) => t.kind === 'project');
   const done = board?.doneToday.filter((d) => d.completedAt >= today) ?? [];
-  const minutes = done.reduce((a, d) => a + (d.minutes ?? 0), 0);
 
   return (
     <div className="person-view">
@@ -228,7 +238,6 @@ function PersonView({ user, board, query }: { user: Profile; board?: Board; quer
         <section className="person-done">
           <h3>
             <MiniFish size={26} /> Terminadas hoy: {done.length}
-            {minutes > 0 && <span className="muted"> · {formatMinutes(minutes)}</span>}
           </h3>
           {done.length > 0 && (
             <ul>
@@ -236,7 +245,7 @@ function PersonView({ user, board, query }: { user: Profile; board?: Board; quer
                 <li key={i}>
                   <span>{d.title}</span>
                   <small>
-                    {formatTime(d.completedAt)} h{d.minutes ? ` · ${formatMinutes(d.minutes)}` : ''}
+                    {formatTime(d.completedAt)} h
                   </small>
                 </li>
               ))}
@@ -291,59 +300,6 @@ function ReadOnlyCard({ task }: { task: BoardTask }) {
   );
 }
 
-function Column({
-  user,
-  board,
-  query,
-  onOpen,
-}: {
-  user: Profile;
-  board?: Board;
-  query: string;
-  onOpen(): void;
-}) {
-  const me = useShared((s) => s.memberId);
-  const casts = useMyCasts();
-  const last = casts.find((c) => c.to === user.uid);
-  const today = startOfDay();
-  const done = board?.doneToday.filter((d) => d.completedAt >= today) ?? [];
-  const tasks = (board?.tasks ?? []).filter((t) => matches(t, query));
-
-  return (
-    <section className="board-col">
-      <header className="board-col-head">
-        <button type="button" className="board-col-open" onClick={onOpen} title={`Ver las tareas de ${user.name}`}>
-          <Avatar uid={user.uid} name={user.name} size={34} />
-          <span className="board-col-name">
-            <strong>
-              {user.name}
-              {user.uid === me && <span className="muted"> (vos)</span>}
-            </strong>
-            <small>{board ? `Actualizado ${ago(board.updatedAt)}` : 'Todavía no abrió la app'}</small>
-          </span>
-        </button>
-      </header>
-      {last && <LastAnswer ping={last} />}
-      {board && (
-        <>
-          <ul className="board-tasks">
-            {tasks.length === 0 && <li className="board-empty">Nada en el agua.</li>}
-            {tasks.map((t) => (
-              <BoardItem key={t.id} task={t} />
-            ))}
-          </ul>
-          <p className="board-done-line">
-            <MiniFish size={22} /> {done.length} terminada{done.length === 1 ? '' : 's'} hoy
-          </p>
-        </>
-      )}
-      <button type="button" className="link-btn board-col-more" onClick={onOpen}>
-        Ver como lo ve {firstName(user.name)} →
-      </button>
-    </section>
-  );
-}
-
 function LastAnswer({ ping }: { ping: Ping }) {
   return (
     <div className={`board-answer ${ping.answeredAt ? '' : 'is-waiting'}`}>
@@ -358,26 +314,5 @@ function LastAnswer({ ping }: { ping: Ping }) {
         </span>
       )}
     </div>
-  );
-}
-
-function BoardItem({ task }: { task: BoardTask }) {
-  const total = task.subtasks.length;
-  const done = task.subtasks.filter((s) => s.done).length;
-  return (
-    <li className="board-task">
-      <div className="board-task-head">
-        <span className="board-task-title">{task.title}</span>
-        {total > 0 && (
-          <span className="board-progress" title={`${done} de ${total} subtareas`}>
-            <span style={{ width: `${(done / total) * 100}%` }} />
-          </span>
-        )}
-      </div>
-      <span className="board-task-meta">
-        {task.shared === 'joint' ? 'Conjunta' : task.from ? `De ${firstName(task.from)}` : task.kind === 'project' ? 'Proyecto' : 'Rápida'}
-        {total > 0 && ` · ${done}/${total}`}
-      </span>
-    </li>
   );
 }

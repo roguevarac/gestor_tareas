@@ -22,11 +22,11 @@ export function RodIcon({ size = 18 }: { size?: number }) {
 }
 
 /**
- * La caña de pescar al costado de la pantalla (solo supervisión): se elige a quién y le baja
+ * La caña de pescar al costado de la pantalla: se elige a quién y le baja
  * la pregunta "¿En qué andás?" como carnada.
  */
 export function FishingRod() {
-  const supervisor = useShared((s) => s.status === 'ready' && !!s.me?.supervisor);
+  const ready = useShared((s) => s.status === 'ready');
   const open = useSupervision((s) => s.rodOpen);
   const users = useShared((s) => s.users);
   const me = useShared((s) => s.memberId);
@@ -56,7 +56,7 @@ export function FishingRod() {
     };
   }, [open]);
 
-  if (!supervisor) return null;
+  if (!ready) return null;
 
   const cast = async (uid: string, name: string) => {
     setCasting(uid);

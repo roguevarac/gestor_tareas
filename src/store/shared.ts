@@ -1,7 +1,7 @@
 import { useMemo } from 'react';
 import { create } from 'zustand';
 import type { MailLink, Task } from '../types';
-import type { Backend, DocPatch, Profile, SharedDoc } from '../sharing/types';
+import type { Backend, Country, DocPatch, Profile, SharedDoc } from '../sharing/types';
 import { firebaseConfig } from '../sharing/config';
 import { demoHandle } from '../sharing/mode';
 import { errorText } from '../sharing/errors';
@@ -385,18 +385,18 @@ export const team = {
     }
     set({ isAdmin: true });
   },
-  async add(name: string, email: string, password: string) {
+  async add(name: string, email: string, password: string, country: Country | null = null) {
     if (!backend || !name.trim()) return;
     const pw = password.trim();
     if (pw.length < MIN_PASSWORD) throw new Error(`La contraseña tiene que tener al menos ${MIN_PASSWORD} caracteres.`);
     await wrap(
-      () => backend!.addMember({ name: name.trim(), email: email.trim() }, (id) => passwordHash(id, pw)),
+      () => backend!.addMember({ name: name.trim(), email: email.trim(), country }, (id) => passwordHash(id, pw)),
       'No pude sumarlo',
     );
   },
-  async update(id: string, name: string, email: string, supervisor = false) {
+  async update(id: string, name: string, email: string, country: Country | null = null) {
     if (!backend || !name.trim()) return;
-    await backend.updateMember(id, { name: name.trim(), email: email.trim(), supervisor }).catch(fail);
+    await backend.updateMember(id, { name: name.trim(), email: email.trim(), country }).catch(fail);
   },
   async remove(id: string) {
     if (!backend) return;

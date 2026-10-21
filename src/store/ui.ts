@@ -13,8 +13,9 @@ interface UIState {
   /** Al cerrar el detalle, volver al panel "Enviadas" (se abrió desde ahí). */
   returnToSent: boolean;
   logOpen: boolean;
+  /** Manual de uso. */
+  manualOpen: boolean;
   helpOpen: boolean;
-  catchEntryId: string | null;
   incoming: IncomingMail | null;
   /** Proyecto recién creado: enfocar su campo "agregar subtarea". */
   focusSubtasksOf: string | null;
@@ -23,7 +24,6 @@ interface UIState {
   openTask(id: string | null, opts?: { fromSent?: boolean }): void;
   setLogOpen(open: boolean): void;
   setHelpOpen(open: boolean): void;
-  showCatch(entryId: string | null): void;
   setIncoming(mail: IncomingMail | null): void;
   setFocusSubtasksOf(id: string | null): void;
   toast(text: string, action?: { label: string; run: () => void }): void;
@@ -36,8 +36,8 @@ export const useUI = create<UIState>()((set, get) => ({
   openTaskId: null,
   returnToSent: false,
   logOpen: false,
+  manualOpen: false,
   helpOpen: false,
-  catchEntryId: null,
   incoming: null,
   focusSubtasksOf: null,
   toasts: [],
@@ -45,7 +45,6 @@ export const useUI = create<UIState>()((set, get) => ({
   openTask: (id, opts) => set({ openTaskId: id, ...(id ? { returnToSent: !!opts?.fromSent } : {}) }),
   setLogOpen: (logOpen) => set({ logOpen }),
   setHelpOpen: (helpOpen) => set({ helpOpen }),
-  showCatch: (catchEntryId) => set({ catchEntryId }),
   setIncoming: (incoming) => set({ incoming }),
   setFocusSubtasksOf: (focusSubtasksOf) => set({ focusSubtasksOf }),
   toast(text, action) {

@@ -129,7 +129,7 @@ export function createDemoBackend(handle: string): Backend {
       const db = load();
       if (!isAdmin(db)) throw denied();
       const id = newId();
-      db.members[id] = { name: m.name, email: m.email, supervisor: !!m.supervisor, hasPassword: true };
+      db.members[id] = { name: m.name, email: m.email, country: m.country ?? null, hasPassword: true };
       db.secrets[id] = await hashFor(id);
       save(db);
       return id;
@@ -137,7 +137,7 @@ export function createDemoBackend(handle: string): Backend {
     async updateMember(id, m) {
       const db = load();
       if (!isAdmin(db)) throw denied();
-      db.members[id] = { ...db.members[id], name: m.name, email: m.email, supervisor: !!m.supervisor };
+      db.members[id] = { ...db.members[id], name: m.name, email: m.email, country: m.country ?? null };
       save(db);
     },
     async setPassword(memberId, hash, byAdmin) {
@@ -164,7 +164,7 @@ export function createDemoBackend(handle: string): Backend {
       await delay();
       const db = load();
       const mine = db.claims[device];
-      if (!mine || !db.members[mine]?.supervisor) throw denied();
+      if (!mine || !db.members[mine]) throw denied();
       const id = newId();
       db.pings[id] = { ...p };
       save(db);

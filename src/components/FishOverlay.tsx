@@ -124,7 +124,11 @@ export function FishOverlay() {
       usePond.setState((s) => ({ splashKey: s.splashKey + 1 }));
       const entryId = taskOps.complete(task);
       finish();
-      if (entryId) window.setTimeout(() => useUI.getState().showCatch(entryId), 380);
+      if (entryId)
+        useUI.getState().toast(`🐟 «${task.title}» al balde`, {
+          label: 'Deshacer',
+          run: () => taskOps.restore(entryId),
+        });
     };
 
     /** Soltada fuera del balde: vuelve nadando a su tarjeta. */

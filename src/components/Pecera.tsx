@@ -16,7 +16,8 @@ import { SpeciesFish } from './Fishes';
 import { Avatar } from './Avatar';
 import { EditableText } from './EditableText';
 import { IconCopy, IconKey, IconLogout, IconPlus, IconSend, IconX } from './Icons';
-import { RodIcon } from './FishingRod';
+import { COUNTRIES, Flag } from './Flags';
+import type { Country } from '../sharing/types';
 import { copyText } from './MailLinks';
 import { APP_URL } from './SendFishDialog';
 
@@ -158,6 +159,7 @@ function TeamSection() {
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [country, setCountry] = useState<Country | ''>('');
   const [busy, setBusy] = useState(false);
   const [confirm, setConfirm] = useState<string | null>(null);
   const [pwFor, setPwFor] = useState<string | null>(null);
@@ -167,11 +169,12 @@ function TeamSection() {
     if (!name.trim()) return;
     setBusy(true);
     try {
-      await team.add(name, email, password);
+      await team.add(name, email, password, country || null);
       toast(`${firstName(name)} ya está en el equipo. Pasale su contraseña.`);
       setName('');
       setEmail('');
       setPassword('');
+      setCountry('');
     } catch (e) {
       toast(e instanceof Error ? e.message : 'No pude sumarlo');
     } finally {
@@ -192,13 +195,13 @@ function TeamSection() {
             <div className="team-main">
               <EditableText
                 value={m.name}
-                onSave={(v) => v.trim() && void team.update(m.uid, v, m.email, m.supervisor)}
+                onSave={(v) => v.trim() && void team.update(m.uid, v, m.email, m.country ?? null)}
                 className="team-name"
                 ariaLabel={`Nombre de ${m.name}`}
               />
               <EditableText
                 value={m.email || 'agregar mail'}
-                onSave={(v) => void team.update(m.uid, m.name, v === 'agregar mail' ? '' : v, m.supervisor)}
+                onSave={(v) => void team.update(m.uid, m.name, v === 'agregar mail' ? '' : v, m.country ?? null)}
                 className={`team-email ${m.email ? '' : 'is-empty'}`}
                 ariaLabel={`Mail de ${m.name}`}
               />
@@ -214,19 +217,21 @@ function TeamSection() {
             >
               <IconKey size={16} />
             </button>
-            <button
-              type="button"
-              className={`sup-toggle ${m.supervisor ? 'is-on' : ''}`}
-              aria-pressed={!!m.supervisor}
-              onClick={() => void team.update(m.uid, m.name, m.email, !m.supervisor)}
-              title={
-                m.supervisor
-                  ? 'Tiene la caña ("¿En qué andás?"). Tocá para sacársela.'
-                  : 'Darle la caña para preguntar "¿En qué andás?"'
-              }
-            >
-              <RodIcon size={15} /> {m.supervisor ? 'Tiene la caña' : 'Caña'}
-            </button>
+            <label className={`country-pick ${m.country ? '' : 'is-empty'}`} title="Oficina">
+              {m.country ? <Flag country={m.country} width={20} /> : <span className="country-none">🌎</span>}
+              <select
+                value={m.country ?? ''}
+                aria-label={`Oficina de ${m.name}`}
+                onChange={(e) => void team.update(m.uid, m.name, m.email, (e.target.value || null) as Country | null)}
+              >
+                <option value="">Sin oficina</option>
+                {COUNTRIES.map((c) => (
+                  <option key={c.code} value={c.code}>
+                    {c.name}
+                  </option>
+                ))}
+              </select>
+            </label>
             {m.uid === memberId ? (
               <span className="tag">vos</span>
             ) : confirm === m.uid ? (
@@ -289,6 +294,19 @@ function TeamSection() {
           aria-label="Contraseña"
           autoComplete="off"
         />
+        <select
+          className="input"
+          value={country}
+          onChange={(e) => setCountry(e.target.value as Country | '')}
+          aria-label="Oficina"
+        >
+          <option value="">Oficina…</option>
+          {COUNTRIES.map((c) => (
+            <option key={c.code} value={c.code}>
+              {c.name}
+            </option>
+          ))}
+        </select>
         <button
           type="submit"
           className="btn btn-secondary"
@@ -299,8 +317,8 @@ function TeamSection() {
         </button>
       </form>
       <p className="hint muted">
-        Cada persona abre la app, toca Compartir, elige su nombre y pone la contraseña que le diste. Con
-        <strong> Caña</strong> le das a alguien (por ejemplo, José) la caña para preguntar “¿En qué andás?”.
+        Cada persona abre la app, toca Compartir, elige su nombre y pone la contraseña que le diste. Con la
+        banderita elegís la oficina de cada uno.
       </p>
     </section>
   );

@@ -9,8 +9,7 @@ import { useTasks } from './tasks';
 import { useUI } from './ui';
 
 /**
- * Tareas del equipo (qué tiene cada uno en el agua: lo ven todos) y la caña de pescar
- * ("¿En qué andás?": solo quien supervisa).
+ * Tareas del equipo (qué tiene cada uno en el agua) y la caña de pescar ("¿En qué andás?").
  */
 interface SupervisionState {
   boards: Board[];
@@ -53,27 +52,24 @@ export function startSupervision() {
   if (started) return;
   started = true;
   const sync = () => {
-    const { memberId, me, status } = useShared.getState();
-    const supervisor = !!me?.supervisor;
-    const key = status === 'ready' && memberId ? `${memberId}:${supervisor}` : '';
+    const { memberId, status } = useShared.getState();
+    const key = status === 'ready' && memberId ? memberId : '';
     if (key === watchedFor) return;
     watchedFor = key;
     unwatch.forEach((u) => u());
     unwatch = [];
     set({ boards: [], pingsIn: [], pingsOut: [] });
     const backend = getBackend();
-    if (!key || !backend || !memberId) return;
-    // Todos ven las tareas del equipo; la caña es solo de quien supervisa.
+    if (!key || !backend || !memberId) {
+      set({ rodOpen: false, boardOpen: false });
+      return;
+    }
+    answersSeeded = false;
     unwatch.push(
       backend.watchPings('to', memberId, (pingsIn) => set({ pingsIn }), fail),
+      backend.watchPings('from', memberId, onPingsOut, fail),
       backend.watchBoards((boards) => set({ boards }), fail),
     );
-    if (supervisor) {
-      answersSeeded = false;
-      unwatch.push(backend.watchPings('from', memberId, onPingsOut, fail));
-    } else {
-      set({ rodOpen: false });
-    }
   };
   useShared.subscribe(sync);
   sync();

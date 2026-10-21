@@ -4,7 +4,7 @@ import type { LogEntry } from '../types';
 import { useTasks } from '../store/tasks';
 import { useUI } from '../store/ui';
 import { taskOps } from '../lib/taskOps';
-import { dayKey, dayLabel, formatMinutes, formatTime, parseDuration, startOfDay, startOfWeek } from '../lib/time';
+import { dayKey, dayLabel, formatTime, startOfDay, startOfWeek } from '../lib/time';
 import { downloadFile, logToCsv } from '../lib/backup';
 import { tone } from '../lib/tones';
 import { Modal } from './Modal';
@@ -12,9 +12,8 @@ import { MiniFish } from './Fish';
 import { SpeciesFish } from './Fishes';
 import { MailChips } from './MailLinks';
 import { EditableText } from './EditableText';
-import { IconClock, IconDownload, IconSearch, IconTrash, IconUndo } from './Icons';
+import { IconDownload, IconSearch, IconTrash, IconUndo } from './Icons';
 
-const sumMinutes = (entries: LogEntry[]) => entries.reduce((acc, e) => acc + (e.minutes ?? 0), 0);
 
 /** La bitácora: todo lo que cayó al balde, por día, con cuánto tardaste. */
 export function LogPanel() {
@@ -81,9 +80,9 @@ export function LogPanel() {
       }
     >
       <div className="log-stats">
-        <Stat label="Hoy" count={todayEntries.length} minutes={sumMinutes(todayEntries)} />
-        <Stat label="Esta semana" count={weekEntries.length} minutes={sumMinutes(weekEntries)} />
-        <Stat label="Total" count={sorted.length} minutes={sumMinutes(sorted)} />
+        <Stat label="Hoy" count={todayEntries.length} />
+        <Stat label="Esta semana" count={weekEntries.length} />
+        <Stat label="Total" count={sorted.length} />
       </div>
 
       {log.length > 0 && (
@@ -112,7 +111,6 @@ export function LogPanel() {
             <span>{dayLabel(entries[0].completedAt)}</span>
             <span className="muted">
               {entries.length} {entries.length === 1 ? 'tarea' : 'tareas'}
-              {sumMinutes(entries) > 0 && ` · ${formatMinutes(sumMinutes(entries))}`}
             </span>
           </h3>
           <ul className="log-list">
@@ -128,14 +126,13 @@ export function LogPanel() {
   );
 }
 
-function Stat({ label, count, minutes }: { label: string; count: number; minutes: number }) {
+function Stat({ label, count }: { label: string; count: number }) {
   return (
     <div className="stat">
       <span className="stat-label">{label}</span>
       <span className="stat-value">
         {count} <MiniFish size={22} />
       </span>
-      <span className="stat-time">{minutes ? formatMinutes(minutes) : '—'}</span>
     </div>
   );
 }
@@ -145,7 +142,6 @@ function LogRow({ entry }: { entry: LogEntry }) {
   const remove = useTasks((s) => s.deleteLog);
   const toast = useUI((s) => s.toast);
   const [confirm, setConfirm] = useState(false);
-  const [badDuration, setBadDuration] = useState(false);
   const t = entry.task;
   const subsDone = t.subtasks.filter((s) => s.done).length;
 
@@ -177,29 +173,6 @@ function LogRow({ entry }: { entry: LogEntry }) {
           {t.subtasks.length > 0 && ` · ${subsDone}/${t.subtasks.length} subtareas`}
         </p>
 
-        <div className="log-fields">
-          <span
-            className={`log-duration ${entry.minutes == null ? 'is-empty' : ''} ${badDuration ? 'is-invalid' : ''}`}
-          >
-            <IconClock size={14} />
-            <EditableText
-              value={entry.minutes != null ? formatMinutes(entry.minutes) : ''}
-              emptyLabel="¿Cuánto tardaste?"
-              placeholder="ej: 1h 30 o de 9 a 10:30"
-              ariaLabel="Tiempo que llevó"
-              onSave={(v) => {
-                if (!v) {
-                  updateLog(entry.id, { minutes: null });
-                  setBadDuration(false);
-                  return;
-                }
-                const m = parseDuration(v);
-                setBadDuration(m == null);
-                if (m != null) updateLog(entry.id, { minutes: m });
-              }}
-            />
-          </span>
-        </div>
         <EditableText
           value={entry.comment}
           emptyLabel="+ comentario"

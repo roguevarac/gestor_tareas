@@ -4548,3 +4548,239 @@ body.portal-open {
     grid-template-columns: 1fr;
   }
 }
+
+/* Cofre de la oficina (abajo a la izquierda) */
+
+.chest-dock {
+  position: fixed;
+  left: max(14px, env(safe-area-inset-left));
+  bottom: max(8px, env(safe-area-inset-bottom));
+  z-index: 39;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.chest-svg {
+  width: 168px;
+  height: 140px;
+  overflow: visible;
+  filter: drop-shadow(0 8px 10px rgba(var(--shadow-rgb), 0.18));
+}
+
+.chest-weed {
+  transform-box: fill-box;
+  transform-origin: bottom center;
+  animation: chest-sway 5.5s ease-in-out infinite alternate;
+}
+
+.chest-weed--back {
+  animation-duration: 7s;
+  animation-delay: -2s;
+}
+
+@keyframes chest-sway {
+  from {
+    transform: skewX(-4deg);
+  }
+  to {
+    transform: skewX(4deg);
+  }
+}
+
+.chest-bubbles circle {
+  animation: chest-bubble 4.2s ease-in infinite;
+}
+
+.chest-bubbles circle:nth-child(2) {
+  animation-delay: 1.3s;
+}
+
+.chest-bubbles circle:nth-child(3) {
+  animation-delay: 2.6s;
+}
+
+@keyframes chest-bubble {
+  0% {
+    transform: translateY(8px);
+    opacity: 0;
+  }
+  20% {
+    opacity: 1;
+  }
+  100% {
+    transform: translateY(-46px);
+    opacity: 0;
+  }
+}
+
+.chest-label {
+  margin-top: -6px;
+  padding: 3px 12px;
+  border-radius: 999px;
+  border: 1px solid var(--pond-line);
+  background: var(--glass-strong);
+  backdrop-filter: blur(6px);
+  font-weight: 800;
+  font-size: 0.8rem;
+  color: var(--ink);
+  box-shadow: 0 6px 14px -10px rgba(var(--shadow-rgb), 0.5);
+}
+
+.country-pick {
+  position: relative;
+  flex: none;
+  display: inline-grid;
+  place-items: center;
+  width: 34px;
+  height: 28px;
+  border-radius: 8px;
+  border: 1px solid var(--line);
+  background: var(--surface);
+  cursor: pointer;
+}
+
+.country-pick select {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  cursor: pointer;
+  font-size: 16px;
+}
+
+.country-pick.is-empty {
+  border-style: dashed;
+}
+
+.country-none {
+  font-size: 0.9rem;
+  opacity: 0.6;
+}
+
+.flag {
+  display: inline-block;
+  flex: none;
+  vertical-align: middle;
+}
+
+@media (max-width: 900px) {
+  .chest-dock {
+    display: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .chest-weed,
+  .chest-bubbles circle {
+    animation: none !important;
+  }
+}
+
+.office-tabs {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-bottom: 16px;
+}
+
+.office-tab {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  height: 44px;
+  padding: 0 14px 0 12px;
+  border-radius: 999px;
+  border: 1.5px solid var(--pond-line);
+  background: var(--glass);
+  font-weight: 800;
+  color: var(--ink-soft);
+  transition:
+    background 0.15s,
+    border-color 0.15s;
+}
+
+.office-tab:hover {
+  background: var(--glass-strong);
+}
+
+.office-tab.is-on {
+  background: var(--surface);
+  border-color: var(--teal);
+  color: var(--ink);
+  box-shadow: 0 8px 18px -14px rgba(var(--shadow-rgb), 0.6);
+}
+
+.office-tab .pond-count {
+  background: var(--surface-3);
+  min-width: 24px;
+  height: 24px;
+}
+
+.portal-empty {
+  margin: 4px 6px;
+  color: var(--ink-faint);
+  font-weight: 650;
+  font-size: 0.88rem;
+  line-height: 1.45;
+}
+
+/* Manual de uso */
+
+.manual-toc {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 0 0 8px;
+}
+
+.manual-section {
+  margin-top: 18px;
+  scroll-margin-top: 12px;
+}
+
+.manual-section h3 {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 0 0 8px;
+  font-size: 1.05rem;
+  font-weight: 850;
+}
+
+.manual-section dl {
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.manual-item {
+  padding: 10px 14px;
+  border-radius: 14px;
+  background: var(--surface-2);
+  border: 1px solid var(--line);
+}
+
+.manual-item dt {
+  font-weight: 800;
+  margin-bottom: 3px;
+}
+
+.manual-item dd {
+  margin: 0;
+  color: var(--ink-soft);
+  font-weight: 600;
+  line-height: 1.5;
+}
+
+.manual-k {
+  display: inline-block;
+  padding: 0 7px;
+  border-radius: 7px;
+  background: var(--surface);
+  border: 1px solid var(--line-strong);
+  font-weight: 800;
+  font-size: 0.88em;
+  color: var(--ink);
+  white-space: nowrap;
+}

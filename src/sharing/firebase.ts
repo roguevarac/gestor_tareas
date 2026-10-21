@@ -94,6 +94,7 @@ export function createFirebaseBackend(config: Record<string, string>): Backend {
                 email: v.email ?? '',
                 supervisor: v.supervisor === true,
                 hasPassword: v.hasPassword === true,
+                country: ['AR', 'CL', 'UY'].includes(v.country) ? v.country : null,
               };
             }),
           ),
@@ -106,7 +107,7 @@ export function createFirebaseBackend(config: Record<string, string>): Backend {
       batch.set(ref, {
         name: m.name,
         email: m.email,
-        supervisor: !!m.supervisor,
+        country: m.country ?? null,
         hasPassword: true,
         createdAt: Date.now(),
       });
@@ -121,7 +122,7 @@ export function createFirebaseBackend(config: Record<string, string>): Backend {
       await batch.commit();
     },
     updateMember: (id, m) =>
-      updateDoc(doc(db, 'members', id), { name: m.name, email: m.email, supervisor: !!m.supervisor }),
+      updateDoc(doc(db, 'members', id), { name: m.name, email: m.email, country: m.country ?? null }),
     saveBoard: (b) => setDoc(doc(db, 'boards', b.memberId), b),
     watchBoards(cb, onError) {
       return onSnapshot(

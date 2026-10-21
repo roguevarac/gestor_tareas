@@ -2,11 +2,9 @@ import { useEffect, useRef, useState } from 'react';
 import { AnimatePresence, motion } from 'motion/react';
 import { useTasks } from '../store/tasks';
 import { useUI } from '../store/ui';
-import { dayKey, formatMinutes, startOfDay, todayLong } from '../lib/time';
-import { downloadFile, makeBackup, parseBackup } from '../lib/backup';
+import { startOfDay, todayLong } from '../lib/time';
 import { Fish, MiniFish } from './Fish';
-import { Modal } from './Modal';
-import { IconBoard, IconBook, IconDots, IconDownload, IconSend, IconUpload, IconUsers } from './Icons';
+import { IconBoard, IconBook, IconDots, IconDownload, IconHelp, IconSend, IconUsers } from './Icons';
 import { useSupervision } from '../store/supervision';
 import { useIncoming, useShared } from '../store/shared';
 import { SpeciesFish } from './Fishes';
@@ -17,7 +15,6 @@ export function Header() {
   const setLogOpen = useUI((s) => s.setLogOpen);
   const today = startOfDay();
   const todays = log.filter((e) => e.completedAt >= today);
-  const minutes = todays.reduce((a, e) => a + (e.minutes ?? 0), 0);
 
   return (
     <header className="topbar">
@@ -34,7 +31,6 @@ export function Header() {
           <span className="muted">Hoy</span>
           <strong>{todays.length}</strong>
           <MiniFish size={26} />
-          {minutes > 0 && <span className="today-time">{formatMinutes(minutes)}</span>}
         </button>
         <button type="button" className="top-btn" onClick={() => setLogOpen(true)}>
           <IconBook size={17} /> <span className="hide-sm">Bitácora</span>
@@ -42,6 +38,14 @@ export function Header() {
         <BoardButton />
         <SentButton />
         <ShareButton />
+        <button
+          type="button"
+          className="top-btn"
+          onClick={() => useUI.setState({ manualOpen: true })}
+          title="Cómo se usa cada cosa"
+        >
+          <IconHelp size={17} /> <span className="hide-sm">Manual</span>
+        </button>
         <MoreMenu />
       </div>
     </header>
@@ -108,9 +112,6 @@ function ShareButton() {
 function MoreMenu() {
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
-  const fileRef = useRef<HTMLInputElement>(null);
-  const toast = useUI((s) => s.toast);
-  const [pending, setPending] = useState<ReturnType<typeof parseBackup> | null>(null);
   const install = useInstallPrompt();
 
   useEffect(() => {
@@ -126,34 +127,6 @@ function MoreMenu() {
       window.removeEventListener('keydown', onKey);
     };
   }, [open]);
-
-  const exportBackup = () => {
-    const { tasks, log } = useTasks.getState();
-    downloadFile(
-      `mis-tareas-backup-${dayKey(Date.now())}.json`,
-      JSON.stringify(makeBackup(tasks, log), null, 2),
-      'application/json',
-    );
-    setOpen(false);
-    toast('Copia de seguridad descargada');
-  };
-
-  const importBackup = async (file: File) => {
-    try {
-      setPending(parseBackup(await file.text()));
-    } catch (err) {
-      toast(err instanceof Error ? err.message : 'No pude leer el archivo');
-    } finally {
-      setOpen(false);
-    }
-  };
-
-  const confirmImport = () => {
-    if (!pending) return;
-    useTasks.getState().replaceAll(pending);
-    setPending(null);
-    toast('Copia de seguridad restaurada');
-  };
 
   return (
     <div className="menu" ref={ref}>
@@ -176,12 +149,15 @@ function MoreMenu() {
             exit={{ opacity: 0, y: -6, scale: 0.97 }}
             transition={{ duration: 0.14 }}
           >
-            <p className="menu-note">Tus tareas se guardan en este navegador. Hacé una copia de vez en cuando.</p>
-            <button type="button" role="menuitem" onClick={exportBackup}>
-              <IconDownload size={16} /> Descargar copia de seguridad
-            </button>
-            <button type="button" role="menuitem" onClick={() => fileRef.current?.click()}>
-              <IconUpload size={16} /> Restaurar una copia…
+            <button
+              type="button"
+              role="menuitem"
+              onClick={() => {
+                setOpen(false);
+                useUI.setState({ manualOpen: true });
+              }}
+            >
+              <IconHelp size={16} /> Manual de uso
             </button>
             {install.canInstall && (
               <button
@@ -199,40 +175,6 @@ function MoreMenu() {
           </motion.div>
         )}
       </AnimatePresence>
-      <input
-        ref={fileRef}
-        type="file"
-        accept="application/json,.json"
-        hidden
-        onChange={(e) => {
-          const f = e.target.files?.[0];
-          e.target.value = '';
-          if (f) void importBackup(f);
-        }}
-      />
-      <Modal
-        open={!!pending}
-        onClose={() => setPending(null)}
-        title="Restaurar copia de seguridad"
-        footer={
-          <>
-            <span className="spacer" />
-            <button type="button" className="btn btn-ghost" onClick={() => setPending(null)}>
-              Cancelar
-            </button>
-            <button type="button" className="btn btn-primary" onClick={confirmImport}>
-              Reemplazar
-            </button>
-          </>
-        }
-      >
-        {pending && (
-          <p>
-            La copia tiene <strong>{pending.tasks.length}</strong> tareas y <strong>{pending.log.length}</strong> en la
-            bitácora. Va a reemplazar todo lo que tenés ahora.
-          </p>
-        )}
-      </Modal>
     </div>
   );
 }

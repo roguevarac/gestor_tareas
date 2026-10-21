@@ -151,3 +151,10 @@ export const IconEdit = (p: P) => (
     <path d="M13.5 6.5l4 4" />
   </svg>
 );
+export const IconHelp = (p: P) => (
+  <svg {...base(p)}>
+    <circle cx="12" cy="12" r="9" />
+    <path d="M9.5 9.3a2.6 2.6 0 015 .9c0 1.7-2.5 2.2-2.5 3.8" />
+    <path d="M12 17.2v.1" strokeWidth={2.8} />
+  </svg>
+);
