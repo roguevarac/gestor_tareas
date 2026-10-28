@@ -56,7 +56,7 @@ export function Pecera() {
               </small>
               {me.private && (
                 <small className="pecera-private">
-                  <IconLock size={12} /> Acceso privado: nadie ve tus tareas; solo lo que vos mandes o te manden.
+                  <IconLock size={12} /> Finance: nadie ve tus tareas; solo lo que vos mandes o te manden.
                 </small>
               )}
               <MyPassword memberId={me.uid} />
@@ -194,7 +194,7 @@ function TeamSection() {
   return (
     <section className="pecera-section">
       <h3>
-        Equipo <span className="pond-count">{members.length}</span>
+        Admin <span className="pond-count">{members.length}</span>
       </h3>
       <ul className="team-list">
         {sorted.map((m) => (
@@ -232,8 +232,8 @@ function TeamSection() {
                 className="icon-btn"
                 onClick={() => setPrivFor(privFor === m.uid ? null : m.uid)}
                 aria-expanded={privFor === m.uid}
-                aria-label={`Pasar a ${m.name} a acceso privado`}
-                title="Pasar a acceso privado"
+                aria-label={`Pasar a ${m.name} a Finance`}
+                title="Pasar a Finance (acceso privado)"
               >
                 <IconLock size={15} />
               </button>
@@ -340,7 +340,7 @@ function TeamSection() {
       </form>
       <p className="hint muted">
         Cada persona abre la app, toca Compartir, elige su nombre y pone la contraseña que le diste; la primera vez
-        elige una suya. Con la banderita elegís la oficina y con el candado le das acceso privado.
+        elige una suya. Con la banderita elegís la oficina y con el candado la pasás a Finance.
       </p>
     </section>
   );
@@ -358,7 +358,7 @@ function MakePrivate({ member, onDone }: { member: Profile; onDone(): void }) {
   return (
     <div className="team-private-note">
       <p className="hint">
-        <b>Acceso privado</b>: {firstName(member.name)} deja de figurar en el equipo, nadie (ni quien administra) ve
+        <b>Pasar a Finance</b>: {firstName(member.name)} deja de figurar en Admin y en Tareas del equipo, nadie (ni quien administra) ve
         sus tareas, no le pueden tirar la caña y no ve las del equipo. Sí se pueden mandar peces (de ida y de vuelta).
         Entra con su mail y esta contraseña
         temporal, y la primera vez elige la suya.
@@ -368,7 +368,7 @@ function MakePrivate({ member, onDone }: { member: Profile; onDone(): void }) {
         onSave={async (pw) => {
           await team.makePrivate(member, pw);
           onDone();
-          toast(`${firstName(member.name)} ya tiene acceso privado. Pasale su contraseña temporal.`);
+          toast(`${firstName(member.name)} ya está en Finance. Pasale su contraseña temporal.`);
         }}
         onCancel={onDone}
       />
@@ -392,7 +392,7 @@ function PrivateSection() {
     setBusy(true);
     try {
       await team.addPrivate(name, email, password);
-      toast(`${firstName(name)} tiene acceso privado. Pasale el link, su mail y la contraseña.`);
+      toast(`${firstName(name)} ya está en Finance. Pasale el link, su mail y la contraseña.`);
       setName('');
       setEmail('');
       setPassword('');
@@ -406,11 +406,11 @@ function PrivateSection() {
   return (
     <section className="pecera-section">
       <h3>
-        <IconLock size={15} /> Acceso privado <span className="pond-count">{people.length}</span>
+        <IconLock size={15} /> Finance <span className="pond-count">{people.length}</span>
       </h3>
       <p className="hint muted">
-        No aparecen en la lista del equipo ni en Tareas del equipo, nadie ve sus tareas y no les llega la caña. Sí se
-        les pueden mandar peces y ellas también mandan. Entran con su mail.
+        Acceso privado: no aparecen en ¿Quién sos? ni en Tareas del equipo, nadie ve sus tareas y no les llega la caña.
+        Sí se les pueden mandar peces y ellas también mandan. Entran con su mail.
       </p>
       {sorted.length > 0 && (
         <ul className="team-list">
@@ -476,14 +476,14 @@ function PrivateSection() {
           void add();
         }}
       >
-        <input className="input" value={name} onChange={(e) => setName(e.target.value)} placeholder="Nombre" aria-label="Nombre (acceso privado)" />
+        <input className="input" value={name} onChange={(e) => setName(e.target.value)} placeholder="Nombre" aria-label="Nombre (Finance)" />
         <input
           className="input"
           type="email"
           value={email}
           onChange={(e) => setEmail(e.target.value)}
           placeholder="Mail"
-          aria-label="Mail (acceso privado)"
+          aria-label="Mail (Finance)"
         />
         <input
           className="input"
@@ -491,7 +491,7 @@ function PrivateSection() {
           value={password}
           onChange={(e) => setPassword(e.target.value)}
           placeholder="Contraseña temporal"
-          aria-label="Contraseña temporal (acceso privado)"
+          aria-label="Contraseña temporal (Finance)"
           autoComplete="off"
         />
         <button

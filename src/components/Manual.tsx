@@ -139,17 +139,18 @@ const SECTIONS: Section[] = [
         keys: 'login contraseña entrar primera vez',
       },
       {
-        title: 'Acceso privado',
+        title: 'Finance (acceso privado)',
         text: (
           <>
-            Algunas personas (por ejemplo, de finanzas) tienen <b>acceso privado</b>: no aparecen en la lista del
-            equipo, nadie ve sus tareas (ni en Tareas del equipo ni con la caña) y ellas tampoco ven las del equipo.
-            Peces sí: se les puede mandar uno (aparecen en <K>Mandar un pez</K>) y ellas también mandan. Entran con{' '}
+            Las personas de <b>Finance</b> tienen acceso privado: no aparecen en <K>¿Quién sos?</K> ni en el
+            equipo de Admin, nadie ve sus tareas (ni en Tareas del equipo ni con la caña) y ellas tampoco ven las del equipo.
+            Peces sí: se les puede mandar uno (en <K>Mandar un pez</K> están bajo <b>Finance</b>) y ellas también
+            mandan. Entran con{' '}
             <K>¿No estás en la lista? Entrá con tu mail</K>. Sus tareas personales quedan solo en su compu; lo único
             que ven otros es lo que se mandan.
           </>
         ),
-        keys: 'privado finanzas mail seguridad',
+        keys: 'privado finanzas finance admin mail seguridad',
       },
       {
         title: 'Mandar un pez',
@@ -258,9 +259,9 @@ const SECTIONS: Section[] = [
         text: (
           <>
             En cada persona: la <b>llavecita</b> le da una contraseña nueva (al entrar elige la suya), la{' '}
-            <b>banderita</b> su oficina, el <b>candado</b> la pasa a acceso privado (necesita el mail cargado) y la ✕
-            la saca del equipo. Tocando el nombre o el mail los corregís. Las personas con acceso privado están en su
-            propia lista, más abajo.
+            <b>banderita</b> su oficina, el <b>candado</b> la pasa a Finance (necesita el mail cargado) y la ✕
+            la saca del equipo. Tocando el nombre o el mail los corregís. En la Pecera hay dos listas: <b>Admin</b> y{' '}
+            <b>Finance</b>.
           </>
         ),
         keys: 'contraseña oficina borrar',

@@ -171,8 +171,8 @@ function SendForm() {
                 <input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Buscar persona…" aria-label="Buscar persona" />
               </label>
             )}
-            <div className="people-pick" role="group" aria-label="Destinatarios">
-              {filtered.map((u) => {
+            {(() => {
+              const chip = (u: (typeof filtered)[number]) => {
                 const on = to.includes(u.uid);
                 return (
                   <button
@@ -181,14 +181,38 @@ function SendForm() {
                     className={`person-chip ${on ? 'is-on' : ''}`}
                     aria-pressed={on}
                     onClick={() => toggle(u.uid)}
-                    title={u.email}
+                    title={u.email || undefined}
                   >
                     <Avatar uid={u.uid} name={u.name} size={26} />
                     <span>{u.name}</span>
                   </button>
                 );
-              })}
-            </div>
+              };
+              const admin = filtered.filter((u) => !u.private);
+              const finance = filtered.filter((u) => u.private);
+              if (!finance.length)
+                return (
+                  <div className="people-pick" role="group" aria-label="Destinatarios">
+                    {admin.map(chip)}
+                  </div>
+                );
+              return (
+                <>
+                  {admin.length > 0 && (
+                    <>
+                      <p className="people-group">Admin</p>
+                      <div className="people-pick" role="group" aria-label="Admin">
+                        {admin.map(chip)}
+                      </div>
+                    </>
+                  )}
+                  <p className="people-group">Finance</p>
+                  <div className="people-pick" role="group" aria-label="Finance">
+                    {finance.map(chip)}
+                  </div>
+                </>
+              );
+            })()}
           </>
         )}
       </section>

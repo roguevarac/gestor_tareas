@@ -4710,3 +4710,14 @@ body.portal-open {
 .pecera-section h3 svg {
   vertical-align: -2px;
 }
+.people-group {
+  margin: 10px 0 6px;
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--muted, #5b6b7a);
+}
+.people-group:first-child {
+  margin-top: 0;
+}

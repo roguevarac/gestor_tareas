@@ -166,6 +166,10 @@ Source: GitHub Actions**. En repos privados, GitHub Pages necesita un plan pago 
 
 ## Cambios
 
+### 2.2.2
+
+- Dos listas: **Admin** (el equipo) y **Finance** (acceso privado), en la Pecera y en *Mandar un pez*.
+
 ### 2.2.1
 
 - A quien tiene acceso privado se le pueden mandar peces y ella también manda (sigue sin figurar en el equipo,
