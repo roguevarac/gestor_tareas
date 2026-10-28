@@ -144,8 +144,9 @@ const SECTIONS: Section[] = [
           <>
             Algunas personas (por ejemplo, de finanzas) tienen <b>acceso privado</b>: no aparecen en la lista del
             equipo, nadie ve sus tareas (ni en Tareas del equipo ni con la caña) y ellas tampoco ven las del equipo.
-            Entran con <K>¿No estás en la lista? Entrá con tu mail</K>. Sus tareas personales quedan solo en su compu;
-            lo único que ven otros es lo que ellas mismas les manden.
+            Peces sí: se les puede mandar uno (aparecen en <K>Mandar un pez</K>) y ellas también mandan. Entran con{' '}
+            <K>¿No estás en la lista? Entrá con tu mail</K>. Sus tareas personales quedan solo en su compu; lo único
+            que ven otros es lo que se mandan.
           </>
         ),
         keys: 'privado finanzas mail seguridad',

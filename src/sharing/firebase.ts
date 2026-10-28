@@ -176,6 +176,7 @@ export function createFirebaseBackend(config: Record<string, string>): Backend {
         createdAt: Date.now(),
       });
       batch.set(doc(db, 'memberSecrets', id), { hash });
+      batch.set(doc(db, 'privateContacts', id), { name: m.name });
       await batch.commit();
     },
     async makePrivate(oldId, newId, m, hash) {
@@ -188,6 +189,7 @@ export function createFirebaseBackend(config: Record<string, string>): Backend {
         createdAt: Date.now(),
       });
       batch.set(doc(db, 'memberSecrets', newId), { hash });
+      batch.set(doc(db, 'privateContacts', newId), { name: m.name });
       batch.delete(doc(db, 'members', oldId));
       batch.delete(doc(db, 'memberSecrets', oldId));
       batch.delete(doc(db, 'boards', oldId));
@@ -196,9 +198,19 @@ export function createFirebaseBackend(config: Record<string, string>): Backend {
     async removePrivateMember(id) {
       const batch = writeBatch(db);
       batch.delete(doc(db, 'privateMembers', id));
+      batch.delete(doc(db, 'privateContacts', id));
       batch.delete(doc(db, 'memberSecrets', id));
       await batch.commit();
     },
+    watchContacts(cb, onError) {
+      return onSnapshot(
+        collection(db, 'privateContacts'),
+        (snap) =>
+          cb(snap.docs.map((d): Profile => ({ uid: d.id, name: d.data().name ?? '', email: '', private: true }))),
+        onError,
+      );
+    },
+    ensureContact: (id, name) => setDoc(doc(db, 'privateContacts', id), { name }),
     deleteBoard: (memberId) => deleteDoc(doc(db, 'boards', memberId)),
     updateMember: (id, m) =>
       updateDoc(doc(db, 'members', id), { name: m.name, email: m.email, country: m.country ?? null }),

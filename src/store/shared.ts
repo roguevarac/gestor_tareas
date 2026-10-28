@@ -44,6 +44,8 @@ interface SharedState {
   users: Profile[];
   /** Personas con acceso privado (solo las carga quien administra). */
   privateUsers: Profile[];
+  /** Personas con acceso privado a las que se les puede mandar un pez (solo el nombre). */
+  contacts: Profile[];
   /** Mi perfil, si tengo acceso privado. */
   privateMe: Profile | null;
   membersLoaded: boolean;
@@ -73,6 +75,7 @@ export const useShared = create<SharedState>()(() => ({
   me: null,
   users: [],
   privateUsers: [],
+  contacts: [],
   privateMe: null,
   membersLoaded: false,
   docs: [],
@@ -163,9 +166,19 @@ export async function startSharing(): Promise<void> {
 }
 
 let unwatchPrivate: (() => void) | null = null;
+const contactsDone = new Set<string>();
+let unwatchContacts: (() => void) | null = null;
 function watchPrivateIfAdmin() {
   if (!backend || !get().isAdmin || unwatchPrivate) return;
-  unwatchPrivate = backend.watchPrivateMembers((privateUsers) => set({ privateUsers }), () => {});
+  unwatchPrivate = backend.watchPrivateMembers((privateUsers) => {
+    set({ privateUsers });
+    // Que se les pueda mandar un pez (también a quienes se pasaron a privado antes de que existiera esto).
+    for (const p of privateUsers) {
+      if (contactsDone.has(p.uid)) continue;
+      contactsDone.add(p.uid);
+      void backend?.ensureContact(p.uid, p.name).catch(() => contactsDone.delete(p.uid));
+    }
+  }, () => {});
 }
 
 async function refreshTeam() {
@@ -186,9 +199,13 @@ function setMember(memberId: string | null, status: SharingStatus) {
   if (get().memberId !== memberId) {
     unwatchShared?.();
     unwatchShared = null;
+    unwatchContacts?.();
+    unwatchContacts = null;
+    set({ contacts: [] });
     set({ docs: [], hidden: {} });
     if (memberId && backend) {
       unwatchShared = backend.watchShared(memberId, (docs) => onDocs(memberId, docs), fail);
+      unwatchContacts = backend.watchContacts((contacts) => set({ contacts }), () => {});
     }
   }
   set({ memberId, status, ...(status === 'ready' ? { authOpen: false } : {}) });
@@ -336,13 +353,17 @@ export function useSent(): SharedDoc[] {
   );
 }
 
-/** Otras personas que usan la app. */
+/** A quiénes les puedo mandar un pez: el equipo y las personas con acceso privado. */
 export function useOthers(): Profile[] {
   const users = useShared((s) => s.users);
+  const contacts = useShared((s) => s.contacts);
   const me = useShared((s) => s.memberId);
   return useMemo(
-    () => users.filter((u) => u.uid !== me && u.name).sort((a, b) => a.name.localeCompare(b.name, 'es')),
-    [users, me],
+    () =>
+      [...users, ...contacts.filter((c) => !users.some((u) => u.uid === c.uid))]
+        .filter((u) => u.uid !== me && u.name)
+        .sort((a, b) => a.name.localeCompare(b.name, 'es')),
+    [users, contacts, me],
   );
 }
 

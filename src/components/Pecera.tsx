@@ -56,7 +56,7 @@ export function Pecera() {
               </small>
               {me.private && (
                 <small className="pecera-private">
-                  <IconLock size={12} /> Acceso privado: no figurás en el equipo y nadie ve tus tareas.
+                  <IconLock size={12} /> Acceso privado: nadie ve tus tareas; solo lo que vos mandes o te manden.
                 </small>
               )}
               <MyPassword memberId={me.uid} />
@@ -359,7 +359,8 @@ function MakePrivate({ member, onDone }: { member: Profile; onDone(): void }) {
     <div className="team-private-note">
       <p className="hint">
         <b>Acceso privado</b>: {firstName(member.name)} deja de figurar en el equipo, nadie (ni quien administra) ve
-        sus tareas, no le pueden tirar la caña y no ve las del equipo. Entra con su mail y esta contraseña
+        sus tareas, no le pueden tirar la caña y no ve las del equipo. Sí se pueden mandar peces (de ida y de vuelta).
+        Entra con su mail y esta contraseña
         temporal, y la primera vez elige la suya.
       </p>
       <PasswordForm
@@ -408,8 +409,8 @@ function PrivateSection() {
         <IconLock size={15} /> Acceso privado <span className="pond-count">{people.length}</span>
       </h3>
       <p className="hint muted">
-        No aparecen en la lista del equipo ni en Tareas del equipo, nadie ve sus tareas y no les llega la caña. Entran
-        con su mail.
+        No aparecen en la lista del equipo ni en Tareas del equipo, nadie ve sus tareas y no les llega la caña. Sí se
+        les pueden mandar peces y ellas también mandan. Entran con su mail.
       </p>
       {sorted.length > 0 && (
         <ul className="team-list">

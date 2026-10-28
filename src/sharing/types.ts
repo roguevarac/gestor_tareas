@@ -141,6 +141,9 @@ export interface Backend {
   /** Pasa a alguien del equipo a acceso privado (con id nuevo y contraseña nueva). */
   makePrivate(oldId: string, newId: string, m: { name: string; email: string }, hash: string): Promise<void>;
   removePrivateMember(id: string): Promise<void>;
+  /** A quién le pueden mandar peces las personas con acceso privado (solo el nombre; lo ve el equipo). */
+  watchContacts(cb: (contacts: Profile[]) => void, onError: (e: unknown) => void): () => void;
+  ensureContact(id: string, name: string): Promise<void>;
   deleteBoard(memberId: string): Promise<void>;
   updateMember(id: string, m: { name: string; email: string; country?: Country | null }): Promise<void>;
   saveBoard(board: Board): Promise<void>;

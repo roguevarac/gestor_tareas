@@ -179,6 +179,15 @@ export function createDemoBackend(handle: string): Backend {
         cb(isAdmin(db) ? Object.entries(db.privateMembers).map(([uid, m]) => ({ uid, ...m, private: true })) : []);
       });
     },
+    watchContacts(cb) {
+      return subscribe(() => {
+        const db = load();
+        const mine = db.claims[device];
+        if (!mine || (!db.members[mine] && !db.privateMembers[mine])) return cb([]);
+        cb(Object.entries(db.privateMembers).map(([uid, m]) => ({ uid, name: m.name, email: '', private: true })));
+      });
+    },
+    async ensureContact() {},
     async addPrivateMember(id, m, hash) {
       const db = load();
       if (!isAdmin(db)) throw denied();

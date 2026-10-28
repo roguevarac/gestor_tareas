@@ -95,6 +95,17 @@ service cloud.firestore {
       allow delete: if isAdmin();
     }
 
+    // A quién se le puede mandar un pez aunque tenga acceso privado: solo el nombre.
+    match /privateContacts/{id} {
+      allow read: if isMember();
+      allow create, update: if isAdminAfter()
+        && request.resource.data.keys().hasOnly(['name'])
+        && request.resource.data.name is string
+        && request.resource.data.name.size() > 0
+        && request.resource.data.name.size() <= 80;
+      allow delete: if isAdmin();
+    }
+
     // Contraseña de cada persona (solo el hash). Nadie la puede leer; la pone quien administra
     // o la cambia la persona misma.
     match /memberSecrets/{id} {
