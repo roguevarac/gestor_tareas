@@ -1,13 +1,5 @@
 import { useState } from 'react';
-import {
-  acceptFish,
-  declineFish,
-  MIN_PASSWORD,
-  team,
-  useIncoming,
-  useSent,
-  useShared,
-} from '../store/shared';
+import { acceptFish, declineFish, MIN_PASSWORD, team, useIncoming, useSent, useShared } from '../store/shared';
 import { useUI } from '../store/ui';
 import { firstName } from '../sharing/logic';
 import { todayLong } from '../lib/time';
@@ -200,85 +192,89 @@ function TeamSection() {
         {sorted.map((m) => (
           <li key={m.uid} className="team-item">
             <div className="team-row">
-            <Avatar uid={m.uid} name={m.name} size={28} />
-            <div className="team-main">
-              <EditableText
-                value={m.name}
-                onSave={(v) => v.trim() && void team.update(m.uid, v, m.email, m.country ?? null)}
-                className="team-name"
-                ariaLabel={`Nombre de ${m.name}`}
-              />
-              <EditableText
-                value={m.email || 'agregar mail'}
-                onSave={(v) => void team.update(m.uid, m.name, v === 'agregar mail' ? '' : v, m.country ?? null)}
-                className={`team-email ${m.email ? '' : 'is-empty'}`}
-                ariaLabel={`Mail de ${m.name}`}
-              />
-              {!m.hasPassword && <small className="team-nopw">Sin contraseña: no puede entrar</small>}
-            </div>
-            <button
-              type="button"
-              className={`icon-btn team-key ${m.hasPassword ? '' : 'is-missing'}`}
-              onClick={() => setPwFor(pwFor === m.uid ? null : m.uid)}
-              aria-expanded={pwFor === m.uid}
-              aria-label={`Contraseña de ${m.name}`}
-              title={m.hasPassword ? 'Cambiar su contraseña' : 'Ponerle contraseña'}
-            >
-              <IconKey size={16} />
-            </button>
-            {m.uid !== memberId && (
+              <Avatar uid={m.uid} name={m.name} size={28} />
+              <div className="team-main">
+                <EditableText
+                  value={m.name}
+                  onSave={(v) => v.trim() && void team.update(m.uid, v, m.email, m.country ?? null)}
+                  className="team-name"
+                  ariaLabel={`Nombre de ${m.name}`}
+                />
+                <EditableText
+                  value={m.email || 'agregar mail'}
+                  onSave={(v) => void team.update(m.uid, m.name, v === 'agregar mail' ? '' : v, m.country ?? null)}
+                  className={`team-email ${m.email ? '' : 'is-empty'}`}
+                  ariaLabel={`Mail de ${m.name}`}
+                />
+                {!m.hasPassword && <small className="team-nopw">Sin contraseña: no puede entrar</small>}
+              </div>
               <button
                 type="button"
-                className="icon-btn"
-                onClick={() => setPrivFor(privFor === m.uid ? null : m.uid)}
-                aria-expanded={privFor === m.uid}
-                aria-label={`Pasar a ${m.name} a Finance`}
-                title="Pasar a Finance (acceso privado)"
+                className={`icon-btn team-key ${m.hasPassword ? '' : 'is-missing'}`}
+                onClick={() => setPwFor(pwFor === m.uid ? null : m.uid)}
+                aria-expanded={pwFor === m.uid}
+                aria-label={`Contraseña de ${m.name}`}
+                title={m.hasPassword ? 'Cambiar su contraseña' : 'Ponerle contraseña'}
               >
-                <IconLock size={15} />
+                <IconKey size={16} />
               </button>
-            )}
-            <label className={`country-pick ${m.country ? '' : 'is-empty'}`} title="Oficina">
-              {m.country ? <Flag country={m.country} width={20} /> : <span className="country-none">🌎</span>}
-              <select
-                value={m.country ?? ''}
-                aria-label={`Oficina de ${m.name}`}
-                onChange={(e) => void team.update(m.uid, m.name, m.email, (e.target.value || null) as Country | null)}
-              >
-                <option value="">Sin oficina</option>
-                {COUNTRIES.map((c) => (
-                  <option key={c.code} value={c.code}>
-                    {c.name}
-                  </option>
-                ))}
-              </select>
-            </label>
-            {m.uid === memberId ? (
-              <span className="tag">vos</span>
-            ) : confirm === m.uid ? (
-              <span className="team-confirm">
-                <button type="button" className="btn btn-danger btn-sm" onClick={() => void team.remove(m.uid)}>
-                  Sacar
+              {m.uid !== memberId && (
+                <label className={`area-pick ${privFor === m.uid ? 'is-finance' : ''}`} title="Equipo: Admin o Finance">
+                  {privFor === m.uid ? <IconLock size={12} /> : null}
+                  <span>{privFor === m.uid ? 'Finance' : 'Admin'}</span>
+                  <select
+                    value={privFor === m.uid ? 'finance' : 'admin'}
+                    aria-label={`Equipo de ${m.name}`}
+                    onChange={(e) => setPrivFor(e.target.value === 'finance' ? m.uid : null)}
+                  >
+                    <option value="admin">Admin</option>
+                    <option value="finance">Finance</option>
+                  </select>
+                </label>
+              )}
+              <label className={`country-pick ${m.country ? '' : 'is-empty'}`} title="Oficina">
+                {m.country ? <Flag country={m.country} width={20} /> : <span className="country-none">🌎</span>}
+                <select
+                  value={m.country ?? ''}
+                  aria-label={`Oficina de ${m.name}`}
+                  onChange={(e) => void team.update(m.uid, m.name, m.email, (e.target.value || null) as Country | null)}
+                >
+                  <option value="">Sin oficina</option>
+                  {COUNTRIES.map((c) => (
+                    <option key={c.code} value={c.code}>
+                      {c.name}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              {m.uid === memberId ? (
+                <span className="tag">vos</span>
+              ) : confirm === m.uid ? (
+                <span className="team-confirm">
+                  <button type="button" className="btn btn-danger btn-sm" onClick={() => void team.remove(m.uid)}>
+                    Sacar
+                  </button>
+                  <button type="button" className="btn btn-ghost btn-sm" onClick={() => setConfirm(null)}>
+                    No
+                  </button>
+                </span>
+              ) : (
+                <button
+                  type="button"
+                  className="icon-btn"
+                  onClick={() => setConfirm(m.uid)}
+                  aria-label={`Sacar a ${m.name} del equipo`}
+                  title="Sacar del equipo"
+                >
+                  <IconX size={15} />
                 </button>
-                <button type="button" className="btn btn-ghost btn-sm" onClick={() => setConfirm(null)}>
-                  No
-                </button>
-              </span>
-            ) : (
-              <button
-                type="button"
-                className="icon-btn"
-                onClick={() => setConfirm(m.uid)}
-                aria-label={`Sacar a ${m.name} del equipo`}
-                title="Sacar del equipo"
-              >
-                <IconX size={15} />
-              </button>
-            )}
+              )}
             </div>
             {pwFor === m.uid && (
               <PasswordForm
-                label={m.hasPassword ? `Nueva contraseña de ${firstName(m.name)}` : `Contraseña para ${firstName(m.name)}`}
+                label={
+                  m.hasPassword ? `Nueva contraseña de ${firstName(m.name)}` : `Contraseña para ${firstName(m.name)}`
+                }
                 onSave={async (pw) => {
                   await team.setPassword(m.uid, pw);
                   setPwFor(null);
@@ -298,7 +294,13 @@ function TeamSection() {
           void add();
         }}
       >
-        <input className="input" value={name} onChange={(e) => setName(e.target.value)} placeholder="Nombre" aria-label="Nombre" />
+        <input
+          className="input"
+          value={name}
+          onChange={(e) => setName(e.target.value)}
+          placeholder="Nombre"
+          aria-label="Nombre"
+        />
         <input
           className="input"
           type="email"
@@ -333,14 +335,16 @@ function TeamSection() {
           type="submit"
           className="btn btn-secondary"
           disabled={busy || !name.trim() || password.trim().length < MIN_PASSWORD}
-          title={password.trim().length < MIN_PASSWORD ? `Contraseña de al menos ${MIN_PASSWORD} caracteres` : undefined}
+          title={
+            password.trim().length < MIN_PASSWORD ? `Contraseña de al menos ${MIN_PASSWORD} caracteres` : undefined
+          }
         >
           <IconPlus size={16} /> Sumar
         </button>
       </form>
       <p className="hint muted">
         Cada persona abre la app, toca Compartir, elige su nombre y pone la contraseña que le diste; la primera vez
-        elige una suya. Con la banderita elegís la oficina y con el candado la pasás a Finance.
+        elige una suya. Con la banderita elegís la oficina y con Admin/Finance, el equipo.
       </p>
     </section>
   );
@@ -358,10 +362,10 @@ function MakePrivate({ member, onDone }: { member: Profile; onDone(): void }) {
   return (
     <div className="team-private-note">
       <p className="hint">
-        <b>Pasar a Finance</b>: {firstName(member.name)} deja de figurar en Admin y en Tareas del equipo, nadie (ni quien administra) ve
-        sus tareas, no le pueden tirar la caña y no ve las del equipo. Sí se pueden mandar peces (de ida y de vuelta).
-        Entra con su mail y esta contraseña
-        temporal, y la primera vez elige la suya.
+        <b>Pasar a Finance</b>: {firstName(member.name)} deja de figurar en Admin (pasa a la pestaña Finance de Tareas
+        del equipo), nadie (ni quien administra) ve sus tareas, no le pueden tirar la caña y no ve las del equipo. Sí se
+        pueden mandar peces (de ida y de vuelta). Entra con su mail y esta contraseña temporal, y la primera vez elige
+        la suya.
       </p>
       <PasswordForm
         label="Contraseña temporal"
@@ -409,7 +413,7 @@ function PrivateSection() {
         <IconLock size={15} /> Finance <span className="pond-count">{people.length}</span>
       </h3>
       <p className="hint muted">
-        Acceso privado: no aparecen en ¿Quién sos? ni en Tareas del equipo, nadie ve sus tareas y no les llega la caña.
+        Acceso privado: no aparecen en ¿Quién sos? ni con Admin, nadie ve sus tareas y no les llega la caña.
         Sí se les pueden mandar peces y ellas también mandan. Entran con su mail.
       </p>
       {sorted.length > 0 && (
@@ -433,9 +437,17 @@ function PrivateSection() {
                 >
                   <IconKey size={16} />
                 </button>
+                <span className="area-pick is-finance is-static">
+                  <IconLock size={12} />
+                  <span>Finance</span>
+                </span>
                 {confirm === m.uid ? (
                   <span className="team-confirm">
-                    <button type="button" className="btn btn-danger btn-sm" onClick={() => void team.removePrivate(m.uid)}>
+                    <button
+                      type="button"
+                      className="btn btn-danger btn-sm"
+                      onClick={() => void team.removePrivate(m.uid)}
+                    >
                       Sacar
                     </button>
                     <button type="button" className="btn btn-ghost btn-sm" onClick={() => setConfirm(null)}>
@@ -476,7 +488,13 @@ function PrivateSection() {
           void add();
         }}
       >
-        <input className="input" value={name} onChange={(e) => setName(e.target.value)} placeholder="Nombre" aria-label="Nombre (Finance)" />
+        <input
+          className="input"
+          value={name}
+          onChange={(e) => setName(e.target.value)}
+          placeholder="Nombre"
+          aria-label="Nombre (Finance)"
+        />
         <input
           className="input"
           type="email"

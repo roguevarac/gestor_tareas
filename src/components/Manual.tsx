@@ -259,7 +259,7 @@ const SECTIONS: Section[] = [
         text: (
           <>
             En cada persona: la <b>llavecita</b> le da una contraseña nueva (al entrar elige la suya), la{' '}
-            <b>banderita</b> su oficina, el <b>candado</b> la pasa a Finance (necesita el mail cargado) y la ✕
+            <b>banderita</b> su oficina, <b>Admin/Finance</b> elige su equipo (para Finance necesita el mail cargado) y la ✕
             la saca del equipo. Tocando el nombre o el mail los corregís. En la Pecera hay dos listas: <b>Admin</b> y{' '}
             <b>Finance</b>.
           </>

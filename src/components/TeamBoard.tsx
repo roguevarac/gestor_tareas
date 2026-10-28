@@ -9,7 +9,7 @@ import { toneStyle } from '../lib/tones';
 import { ago, formatTime, startOfDay } from '../lib/time';
 import { Avatar } from './Avatar';
 import { MiniFish } from './Fish';
-import { IconCheck, IconSearch } from './Icons';
+import { IconCheck, IconLock, IconSearch, IconSend } from './Icons';
 import { RodIcon } from './FishingRod';
 import { COUNTRIES, Flag } from './Flags';
 import { PriorityChip } from './PriorityChip';
@@ -57,9 +57,20 @@ export function TeamBoard() {
 
 type Office = Country | 'none';
 
+type Area = 'admin' | 'finance';
+
 function Portal() {
   const boards = useSupervision((s) => s.boards);
   const users = useShared((s) => s.users);
+  const contacts = useShared((s) => s.contacts);
+  const [area, setArea] = useState<Area>('admin');
+  const finance = useMemo(
+    () =>
+      contacts
+        .filter((c) => c.name && !users.some((u) => u.uid === c.uid))
+        .sort((a, b) => a.name.localeCompare(b.name, 'es')),
+    [contacts, users],
+  );
   const myCountry = useShared((s) => s.me?.country ?? null);
   const [query, setQuery] = useState('');
   const today = startOfDay();
@@ -74,7 +85,11 @@ function Portal() {
 
   // Oficinas: Argentina, Chile y Uruguay; "Sin oficina" solo si hay alguien sin asignar.
   const offices: { key: Office; name: string; count: number }[] = [
-    ...COUNTRIES.map((c) => ({ key: c.code as Office, name: c.name, count: people.filter((p) => p.user.country === c.code).length })),
+    ...COUNTRIES.map((c) => ({
+      key: c.code as Office,
+      name: c.name,
+      count: people.filter((p) => p.user.country === c.code).length,
+    })),
     { key: 'none' as Office, name: 'Sin oficina', count: people.filter((p) => !p.user.country).length },
   ].filter((o) => o.key !== 'none' || o.count > 0);
 
@@ -102,58 +117,165 @@ function Portal() {
         </div>
         <label className="search portal-search">
           <IconSearch size={16} />
-          <input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Buscar tarea…" aria-label="Buscar tarea" />
+          <input
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            placeholder="Buscar tarea…"
+            aria-label="Buscar tarea"
+          />
         </label>
       </header>
 
-      <div className="office-tabs" role="tablist" aria-label="Oficina">
-        {offices.map((o) => (
+      <div className="area-tabs" role="tablist" aria-label="Equipo">
+        {(
+          [
+            ['admin', 'Admin', people.length],
+            ['finance', 'Finance', finance.length],
+          ] as const
+        ).map(([key, name, count]) => (
           <button
-            key={o.key}
+            key={key}
             type="button"
             role="tab"
-            aria-selected={office === o.key}
-            className={`office-tab ${office === o.key ? 'is-on' : ''}`}
+            aria-selected={area === key}
+            className={`area-tab ${area === key ? 'is-on' : ''}`}
             onClick={() => {
-              setOffice(o.key);
+              setArea(key);
               setSelected(null);
             }}
           >
-            {o.key !== 'none' ? <Flag country={o.key} width={26} /> : <span className="country-none">🌎</span>}
-            <span>{o.name}</span>
-            <span className="pond-count">{o.count}</span>
+            {key === 'finance' && <IconLock size={15} />}
+            <span>{name}</span>
+            <span className="pond-count">{count}</span>
           </button>
         ))}
       </div>
 
-      <div className="portal-body">
-        <nav className="portal-people" aria-label="Personas">
-          {inOffice.length === 0 && (
-            <p className="portal-empty">
-              Nadie en esta oficina todavía. Quien administra el equipo asigna la oficina de cada uno en Pecera → Equipo.
-            </p>
-          )}
-          {inOffice.map(({ user, board }) => (
-            <button
-              key={user.uid}
-              type="button"
-              className={`portal-person ${current?.user.uid === user.uid ? 'is-on' : ''}`}
-              onClick={() => setSelected(user.uid)}
-              aria-current={current?.user.uid === user.uid}
-            >
-              <Avatar uid={user.uid} name={user.name} size={30} />
-              <span className="portal-person-main">
-                <strong>{user.name}</strong>
-                <small>{board ? `${board.tasks.length} en el agua · ${ago(board.updatedAt)}` : 'Todavía no abrió la app'}</small>
-              </span>
-            </button>
-          ))}
-        </nav>
+      {area === 'finance' ? (
+        <FinanceArea people={finance} selected={selected} onSelect={setSelected} />
+      ) : (
+        <>
+          <div className="office-tabs" role="tablist" aria-label="Oficina">
+            {offices.map((o) => (
+              <button
+                key={o.key}
+                type="button"
+                role="tab"
+                aria-selected={office === o.key}
+                className={`office-tab ${office === o.key ? 'is-on' : ''}`}
+                onClick={() => {
+                  setOffice(o.key);
+                  setSelected(null);
+                }}
+              >
+                {o.key !== 'none' ? <Flag country={o.key} width={26} /> : <span className="country-none">🌎</span>}
+                <span>{o.name}</span>
+                <span className="pond-count">{o.count}</span>
+              </button>
+            ))}
+          </div>
 
-        <main className="portal-main">
-          {current && <PersonView user={current.user} board={current.board} query={query} />}
-        </main>
-      </div>
+          <div className="portal-body">
+            <nav className="portal-people" aria-label="Personas">
+              {inOffice.length === 0 && (
+                <p className="portal-empty">
+                  Nadie en esta oficina todavía. Quien administra el equipo asigna la oficina de cada uno en Pecera →
+                  Equipo.
+                </p>
+              )}
+              {inOffice.map(({ user, board }) => (
+                <button
+                  key={user.uid}
+                  type="button"
+                  className={`portal-person ${current?.user.uid === user.uid ? 'is-on' : ''}`}
+                  onClick={() => setSelected(user.uid)}
+                  aria-current={current?.user.uid === user.uid}
+                >
+                  <Avatar uid={user.uid} name={user.name} size={30} />
+                  <span className="portal-person-main">
+                    <strong>{user.name}</strong>
+                    <small>
+                      {board ? `${board.tasks.length} en el agua · ${ago(board.updatedAt)}` : 'Todavía no abrió la app'}
+                    </small>
+                  </span>
+                </button>
+              ))}
+            </nav>
+
+            <main className="portal-main">
+              {current && <PersonView user={current.user} board={current.board} query={query} />}
+            </main>
+          </div>
+        </>
+      )}
+    </div>
+  );
+}
+
+/** Finance: se ve quién está, pero sus tareas son privadas (no se publican). */
+function FinanceArea({
+  people,
+  selected,
+  onSelect,
+}: {
+  people: Profile[];
+  selected: string | null;
+  onSelect(id: string): void;
+}) {
+  const current = people.find((p) => p.uid === selected) ?? people[0];
+  return (
+    <div className="portal-body">
+      <nav className="portal-people" aria-label="Personas de Finance">
+        {people.length === 0 && (
+          <p className="portal-empty">
+            Nadie en Finance todavía. Quien administra pasa a alguien con el selector Admin/Finance en Pecera → Admin.
+          </p>
+        )}
+        {people.map((u) => (
+          <button
+            key={u.uid}
+            type="button"
+            className={`portal-person ${current?.uid === u.uid ? 'is-on' : ''}`}
+            onClick={() => onSelect(u.uid)}
+            aria-current={current?.uid === u.uid}
+          >
+            <Avatar uid={u.uid} name={u.name} size={30} />
+            <span className="portal-person-main">
+              <strong>{u.name}</strong>
+              <small>Tareas privadas</small>
+            </span>
+          </button>
+        ))}
+      </nav>
+      <main className="portal-main">
+        {current && (
+          <div className="person-view">
+            <header className="person-head">
+              <Avatar uid={current.uid} name={current.name} size={44} />
+              <div>
+                <h2>{current.name}</h2>
+                <p>Finance</p>
+              </div>
+            </header>
+            <div className="finance-private">
+              <IconLock size={22} />
+              <p>
+                Sus tareas son privadas: no se ven acá. Si necesitás algo de {firstName(current.name)}, mandale un pez.
+              </p>
+              <button
+                type="button"
+                className="btn btn-primary btn-sm"
+                onClick={() => {
+                  useSupervision.setState({ boardOpen: false });
+                  useShared.setState({ sendDialog: {} });
+                }}
+              >
+                <IconSend size={15} /> Mandar un pez
+              </button>
+            </div>
+          </div>
+        )}
+      </main>
     </div>
   );
 }
@@ -244,9 +366,7 @@ function PersonView({ user, board, query }: { user: Profile; board?: Board; quer
               {done.map((d, i) => (
                 <li key={i}>
                   <span>{d.title}</span>
-                  <small>
-                    {formatTime(d.completedAt)} h
-                  </small>
+                  <small>{formatTime(d.completedAt)} h</small>
                 </li>
               ))}
             </ul>
@@ -263,7 +383,11 @@ function ReadOnlyCard({ task }: { task: BoardTask }) {
   const done = task.subtasks.filter((s) => s.done).length;
   const pct = total ? Math.round((done / total) * 100) : 0;
   return (
-    <article className={`card card--${task.kind} card--readonly`} style={toneStyle(task.tone ?? 0)} aria-label={task.title}>
+    <article
+      className={`card card--${task.kind} card--readonly`}
+      style={toneStyle(task.tone ?? 0)}
+      aria-label={task.title}
+    >
       <div className="card-head">
         <h3 className="card-title">{task.title}</h3>
         <PriorityChip priority={task.priority} />

@@ -4721,3 +4721,84 @@ body.portal-open {
 .people-group:first-child {
   margin-top: 0;
 }
+
+/* Equipos: Admin / Finance */
+.area-tabs {
+  display: flex;
+  width: fit-content;
+  align-self: flex-start;
+  justify-self: start;
+  gap: 4px;
+  padding: 4px;
+  margin-bottom: 12px;
+  border-radius: 999px;
+  background: var(--glass);
+  border: 1.5px solid var(--pond-line);
+}
+.area-tab {
+  border: 0;
+  background: transparent;
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  height: 38px;
+  padding: 0 16px;
+  border-radius: 999px;
+  font-weight: 800;
+  color: var(--ink-soft);
+}
+.area-tab.is-on {
+  background: var(--teal);
+  color: #fff;
+}
+.area-tab .pond-count {
+  min-width: 22px;
+  height: 22px;
+  background: var(--surface-3);
+  color: var(--ink);
+}
+.area-pick {
+  position: relative;
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  height: 28px;
+  padding: 0 9px;
+  border-radius: 8px;
+  border: 1px solid var(--line);
+  background: var(--surface);
+  font-size: 0.75rem;
+  font-weight: 800;
+  color: var(--ink-soft);
+  cursor: pointer;
+}
+.area-pick.is-finance {
+  border-color: var(--teal);
+  color: var(--ink);
+}
+.area-pick.is-static {
+  cursor: default;
+}
+.area-pick select {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  cursor: pointer;
+  font-size: 16px;
+}
+.finance-private {
+  display: grid;
+  justify-items: start;
+  gap: 10px;
+  max-width: 460px;
+  margin-top: 16px;
+  padding: 18px 20px;
+  border-radius: 16px;
+  background: var(--glass);
+  border: 1.5px dashed var(--pond-line);
+  color: var(--ink-soft);
+}
+.finance-private p {
+  margin: 0;
+}

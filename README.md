@@ -166,6 +166,12 @@ Source: GitHub Actions**. En repos privados, GitHub Pages necesita un plan pago 
 
 ## Cambios
 
+### 2.3
+
+- *Tareas del equipo* arriba se divide en **Admin** (con las oficinas) y **Finance** (se ve quién está, pero sus
+  tareas son privadas; se le puede mandar un pez).
+- En Pecera → Admin, cada persona tiene un selector **Admin / Finance** para pasarla de equipo.
+
 ### 2.2.2
 
 - Dos listas: **Admin** (el equipo) y **Finance** (acceso privado), en la Pecera y en *Mandar un pez*.
