@@ -188,6 +188,9 @@ export function createDemoBackend(handle: string): Backend {
       });
     },
     async ensureContact() {},
+    async rulesOk() {
+      return !new URLSearchParams(location.search).has('oldrules');
+    },
     async addPrivateMember(id, m, hash) {
       const db = load();
       if (!isAdmin(db)) throw denied();

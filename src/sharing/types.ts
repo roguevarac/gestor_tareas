@@ -144,6 +144,8 @@ export interface Backend {
   /** A quién le pueden mandar peces las personas con acceso privado (solo el nombre; lo ve el equipo). */
   watchContacts(cb: (contacts: Profile[]) => void, onError: (e: unknown) => void): () => void;
   ensureContact(id: string, name: string): Promise<void>;
+  /** ¿Las reglas publicadas en el servidor son las de esta versión? */
+  rulesOk(): Promise<boolean>;
   deleteBoard(memberId: string): Promise<void>;
   updateMember(id: string, m: { name: string; email: string; country?: Country | null }): Promise<void>;
   saveBoard(board: Board): Promise<void>;

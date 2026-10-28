@@ -166,6 +166,10 @@ Source: GitHub Actions**. En repos privados, GitHub Pages necesita un plan pago 
 
 ## Cambios
 
+### 2.3.1
+
+- Si el servidor tiene las reglas viejas, la Pecera de quien administra lo avisa.
+
 ### 2.3
 
 - *Tareas del equipo* arriba se divide en **Admin** (con las oficinas) y **Finance** (se ve quién está, pero sus

@@ -127,6 +127,7 @@ export function Pecera() {
 
       {isAdmin ? (
         <>
+          <RulesWarning />
           <TeamSection />
           <PrivateSection />
         </>
@@ -347,6 +348,21 @@ function TeamSection() {
         elige una suya. Con la banderita elegís la oficina y con Admin/Finance, el equipo.
       </p>
     </section>
+  );
+}
+
+/** Si el servidor todavía tiene las reglas viejas, Finance no funciona: avisarle a quien administra. */
+function RulesWarning() {
+  const ok = useShared((s) => s.rulesOk);
+  if (ok !== false) return null;
+  return (
+    <div className="rules-warning" role="alert">
+      <strong>Falta publicar las reglas nuevas del servidor.</strong>
+      <span>
+        Hasta que se publiquen, no se puede sumar ni pasar gente a Finance (el servidor lo rechaza). Después de
+        publicarlas, recargá la app.
+      </span>
+    </div>
   );
 }
 

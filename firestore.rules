@@ -34,6 +34,11 @@ service cloud.firestore {
         && !exists(/databases/$(database)/documents/config/public);
     }
 
+    // Marca de versión: si se puede leer, las reglas publicadas ya traen Finance (2.3 o más nuevas).
+    match /config/rules-v3 {
+      allow get: if signedIn();
+    }
+
     // La clave para administrar: nadie la puede leer.
     match /config/secrets {
       allow create: if signedIn()

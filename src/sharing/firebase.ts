@@ -211,6 +211,14 @@ export function createFirebaseBackend(config: Record<string, string>): Backend {
       );
     },
     ensureContact: (id, name) => setDoc(doc(db, 'privateContacts', id), { name }),
+    async rulesOk() {
+      try {
+        await getDoc(doc(db, 'config', 'rules-v3'));
+        return true;
+      } catch (e) {
+        return (e as { code?: string }).code !== 'permission-denied';
+      }
+    },
     deleteBoard: (memberId) => deleteDoc(doc(db, 'boards', memberId)),
     updateMember: (id, m) =>
       updateDoc(doc(db, 'members', id), { name: m.name, email: m.email, country: m.country ?? null }),

@@ -46,6 +46,8 @@ interface SharedState {
   privateUsers: Profile[];
   /** Personas con acceso privado a las que se les puede mandar un pez (solo el nombre). */
   contacts: Profile[];
+  /** false = el servidor tiene reglas viejas (quien administra tiene que publicarlas). */
+  rulesOk: boolean | null;
   /** Mi perfil, si tengo acceso privado. */
   privateMe: Profile | null;
   membersLoaded: boolean;
@@ -76,6 +78,7 @@ export const useShared = create<SharedState>()(() => ({
   users: [],
   privateUsers: [],
   contacts: [],
+  rulesOk: null,
   privateMe: null,
   membersLoaded: false,
   docs: [],
@@ -170,6 +173,7 @@ const contactsDone = new Set<string>();
 let unwatchContacts: (() => void) | null = null;
 function watchPrivateIfAdmin() {
   if (!backend || !get().isAdmin || unwatchPrivate) return;
+  void backend.rulesOk().then((rulesOk) => set({ rulesOk }));
   unwatchPrivate = backend.watchPrivateMembers((privateUsers) => {
     set({ privateUsers });
     // Que se les pueda mandar un pez (también a quienes se pasaron a privado antes de que existiera esto).

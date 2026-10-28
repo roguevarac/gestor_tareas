@@ -4802,3 +4802,14 @@ body.portal-open {
 .finance-private p {
   margin: 0;
 }
+.rules-warning {
+  display: grid;
+  gap: 4px;
+  margin: 12px 0;
+  padding: 12px 14px;
+  border-radius: 12px;
+  background: #fff4e0;
+  border: 1.5px solid #f0b14a;
+  color: #6b4300;
+  font-size: 0.86rem;
+}
