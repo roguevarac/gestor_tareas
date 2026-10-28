@@ -12,6 +12,10 @@ export interface Profile {
   supervisor?: boolean;
   /** Ya tiene contraseña para entrar. */
   hasPassword?: boolean;
+  /** La contraseña se la puso quien administra: la tiene que cambiar al entrar. */
+  mustChangePassword?: boolean;
+  /** Acceso privado: no figura en el equipo y nadie ve sus tareas. */
+  private?: boolean;
   /** Oficina (país) en la que trabaja. */
   country?: Country | null;
 }
@@ -127,7 +131,17 @@ export interface Backend {
     hashFor: (memberId: string) => Promise<string>,
   ): Promise<string>;
   /** Cambiar la contraseña (quien administra, o la persona misma). */
-  setPassword(memberId: string, hash: string, byAdmin: boolean): Promise<void>;
+  setPassword(memberId: string, hash: string, byAdmin: boolean, isPrivate?: boolean): Promise<void>;
+  /** La persona ya eligió su contraseña. */
+  clearMustChange(memberId: string, isPrivate: boolean): Promise<void>;
+  /** Personas con acceso privado (solo quien administra; o la persona misma con su id). */
+  getPrivateMember(id: string): Promise<Profile | null>;
+  watchPrivateMembers(cb: (members: Profile[]) => void, onError: (e: unknown) => void): () => void;
+  addPrivateMember(id: string, m: { name: string; email: string }, hash: string): Promise<void>;
+  /** Pasa a alguien del equipo a acceso privado (con id nuevo y contraseña nueva). */
+  makePrivate(oldId: string, newId: string, m: { name: string; email: string }, hash: string): Promise<void>;
+  removePrivateMember(id: string): Promise<void>;
+  deleteBoard(memberId: string): Promise<void>;
   updateMember(id: string, m: { name: string; email: string; country?: Country | null }): Promise<void>;
   saveBoard(board: Board): Promise<void>;
   watchBoards(cb: (boards: Board[]) => void, onError: (e: unknown) => void): () => void;

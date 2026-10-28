@@ -40,8 +40,12 @@ interface SharedState {
   /** Persona del equipo que eligió este navegador. */
   memberId: string | null;
   me: Profile | null;
-  /** Todo el equipo. */
+  /** Todo el equipo (sin las personas con acceso privado). */
   users: Profile[];
+  /** Personas con acceso privado (solo las carga quien administra). */
+  privateUsers: Profile[];
+  /** Mi perfil, si tengo acceso privado. */
+  privateMe: Profile | null;
   membersLoaded: boolean;
   docs: SharedDoc[];
   /** Tareas que acabo de tirar al balde (se esconden ya, sin esperar al servidor). */
@@ -68,6 +72,8 @@ export const useShared = create<SharedState>()(() => ({
   memberId: null,
   me: null,
   users: [],
+  privateUsers: [],
+  privateMe: null,
   membersLoaded: false,
   docs: [],
   hidden: {},
@@ -156,12 +162,19 @@ export async function startSharing(): Promise<void> {
   );
 }
 
+let unwatchPrivate: (() => void) | null = null;
+function watchPrivateIfAdmin() {
+  if (!backend || !get().isAdmin || unwatchPrivate) return;
+  unwatchPrivate = backend.watchPrivateMembers((privateUsers) => set({ privateUsers }), () => {});
+}
+
 async function refreshTeam() {
   const deviceId = get().deviceId;
   if (!backend || !deviceId) return;
   try {
     const team = await backend.readTeam(deviceId);
     set({ isAdmin: team.admin });
+    watchPrivateIfAdmin();
     if (!team.setup) setMember(null, 'setup');
     else setMember(team.memberId, team.memberId ? 'ready' : 'choose');
   } catch (e) {
@@ -183,19 +196,50 @@ function setMember(memberId: string | null, status: SharingStatus) {
   if (!memberId) updateBadge(0);
 }
 
-/** Mi perfil sale de la lista del equipo (si me sacaron del equipo, vuelvo a elegir). */
+/**
+ * Mi perfil sale de la lista del equipo, o de las personas con acceso privado
+ * (si me sacaron del equipo, vuelvo a elegir).
+ */
+let loadingPrivate: string | null = null;
 function syncMe() {
-  const { memberId, users, membersLoaded, status } = get();
+  const { memberId, users, membersLoaded, status, privateMe } = get();
   if (!memberId) {
-    if (get().me) set({ me: null });
+    if (get().me || privateMe) set({ me: null, privateMe: null });
     return;
   }
   const mine = users.find((u) => u.uid === memberId);
-  if (mine) set({ me: mine });
-  else if (membersLoaded && status === 'ready') {
-    set({ me: null });
-    setMember(null, 'choose');
+  if (mine) {
+    set({ me: mine, privateMe: null });
+    return;
   }
+  if (privateMe?.uid === memberId) {
+    if (get().me !== privateMe) set({ me: privateMe });
+    return;
+  }
+  if (!membersLoaded || status !== 'ready' || !backend || loadingPrivate === memberId) return;
+  loadingPrivate = memberId;
+  void backend.getPrivateMember(memberId).then((p) => {
+    loadingPrivate = null;
+    if (get().memberId !== memberId) return;
+    if (p) {
+      set({ privateMe: p, me: p });
+      // Por las dudas: si alguna vez publicó sus tareas para el equipo, se borran.
+      void backend?.deleteBoard(memberId).catch(() => {});
+    } else {
+      set({ me: null });
+      setMember(null, 'choose');
+    }
+  });
+}
+
+/** Id de una persona con acceso privado: sale de su mail (así entra sin figurar en ninguna lista). */
+export async function privateIdFor(email: string): Promise<string> {
+  const data = new TextEncoder().encode(`mis-tareas-privado:${email.trim().toLowerCase()}`);
+  const digest = await crypto.subtle.digest('SHA-256', data);
+  return [...new Uint8Array(digest)]
+    .map((b) => b.toString(16).padStart(2, '0'))
+    .join('')
+    .slice(0, 28);
 }
 
 // ---------------- Lo que llega del servidor ----------------
@@ -341,6 +385,7 @@ export const team = {
       'No pude armar el equipo',
     );
     set({ isAdmin: true });
+    watchPrivateIfAdmin();
     setMember(id, 'ready');
   },
   /** "¿Quién sos?": este navegador queda como esa persona (con su contraseña). */
@@ -357,16 +402,67 @@ export const team = {
     }
     setMember(memberId, 'ready');
   },
-  /** Quien administra pone o cambia la contraseña de alguien; o cada uno cambia la suya. */
-  async setPassword(memberId: string, password: string) {
+  /** Entrar con mail y contraseña (personas con acceso privado: no figuran en la lista). */
+  async claimByEmail(email: string, password: string) {
+    if (!email.trim() || !password.trim()) throw new Error('Poné tu mail y tu contraseña.');
+    const id = await privateIdFor(email);
+    try {
+      await team.claim(id, password);
+    } catch {
+      throw new Error('Mail o contraseña incorrectos.');
+    }
+  },
+  /**
+   * Quien administra pone o cambia la contraseña de alguien (y esa persona la tendrá que cambiar
+   * al entrar); o cada uno cambia la suya.
+   */
+  async setPassword(memberId: string, password: string, opts?: { isPrivate?: boolean }) {
     if (!backend) return;
     const pw = password.trim();
     if (pw.length < MIN_PASSWORD) throw new Error(`La contraseña tiene que tener al menos ${MIN_PASSWORD} caracteres.`);
-    const byAdmin = get().isAdmin;
+    const mine = memberId === get().memberId;
+    const byAdmin = get().isAdmin && !mine;
+    const isPrivate = opts?.isPrivate ?? (mine ? !!get().me?.private : false);
     await wrap(
-      async () => backend!.setPassword(memberId, await passwordHash(memberId, pw), byAdmin),
+      async () => backend!.setPassword(memberId, await passwordHash(memberId, pw), byAdmin, isPrivate),
       'No pude cambiar la contraseña',
     );
+    if (mine && get().me?.mustChangePassword) {
+      await backend.clearMustChange(memberId, isPrivate).catch(() => {});
+      set((s) => {
+        const me = s.me ? { ...s.me, mustChangePassword: false } : s.me;
+        return { me, privateMe: s.privateMe ? me : null };
+      });
+    }
+  },
+  /** Sumar a alguien con acceso privado (no figura en el equipo y nadie ve sus tareas). */
+  async addPrivate(name: string, email: string, password: string) {
+    if (!backend || !name.trim()) return;
+    if (!email.trim()) throw new Error('Con acceso privado se entra con el mail: ponelo.');
+    const pw = password.trim();
+    if (pw.length < MIN_PASSWORD) throw new Error(`La contraseña tiene que tener al menos ${MIN_PASSWORD} caracteres.`);
+    const id = await privateIdFor(email);
+    await wrap(
+      async () => backend!.addPrivateMember(id, { name: name.trim(), email: email.trim() }, await passwordHash(id, pw)),
+      'No pude sumarla',
+    );
+  },
+  /** Pasar a alguien del equipo a acceso privado (con una contraseña nueva). */
+  async makePrivate(member: Profile, password: string) {
+    if (!backend) return;
+    if (!member.email.trim()) throw new Error('Primero cargale el mail: con acceso privado se entra con el mail.');
+    const pw = password.trim();
+    if (pw.length < MIN_PASSWORD) throw new Error(`La contraseña tiene que tener al menos ${MIN_PASSWORD} caracteres.`);
+    const id = await privateIdFor(member.email);
+    await wrap(
+      async () =>
+        backend!.makePrivate(member.uid, id, { name: member.name, email: member.email.trim() }, await passwordHash(id, pw)),
+      'No pude pasarla a acceso privado',
+    );
+  },
+  async removePrivate(id: string) {
+    if (!backend) return;
+    await backend.removePrivateMember(id).catch(fail);
   },
   /** Cambiar de persona en esta compu. */
   async leave() {
@@ -384,6 +480,7 @@ export const team = {
       throw new Error(errorText(e) ?? 'No pude comprobar la clave');
     }
     set({ isAdmin: true });
+    watchPrivateIfAdmin();
   },
   async add(name: string, email: string, password: string, country: Country | null = null) {
     if (!backend || !name.trim()) return;

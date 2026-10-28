@@ -70,7 +70,7 @@ function SentButton() {
 
 /** Para todos: las tareas de cada persona del equipo (solo para mirar). */
 function BoardButton() {
-  const ready = useShared((s) => s.status === 'ready');
+  const ready = useShared((s) => s.status === 'ready' && !!s.me && !s.me.private);
   if (!ready) return null;
   return (
     <button

@@ -22,6 +22,7 @@ import { FishingRod } from './components/FishingRod';
 import { Bait } from './components/Bait';
 import { UpdateBanner } from './components/UpdateBanner';
 import { Manual } from './components/Manual';
+import { PasswordGate } from './components/PasswordGate';
 import { Matrix, readView, ViewSwitch, type View } from './components/Matrix';
 
 export default function App() {
@@ -64,6 +65,7 @@ export default function App() {
       <FishingRod />
       <Bait />
       <Manual />
+      <PasswordGate />
       <UpdateBanner />
       <Toasts />
     </>

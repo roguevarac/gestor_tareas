@@ -145,6 +145,12 @@ export const IconKey = (p: P) => (
     <path d="M11 12l9-9M17 6l3 3M14.5 8.5l2.5 2.5" />
   </svg>
 );
+export const IconLock = (p: P) => (
+  <svg {...base(p)}>
+    <rect x="5" y="11" width="14" height="10" rx="2.5" />
+    <path d="M8 11V8a4 4 0 0 1 8 0v3" />
+  </svg>
+);
 export const IconEdit = (p: P) => (
   <svg {...base(p)}>
     <path d="M4 20h4L19 9l-4-4L4 16z" />

@@ -12,8 +12,11 @@ service cloud.firestore {
     function me() { return get(claimPath()).data.memberId; }
     function isMember() {
       return signedIn() && exists(claimPath())
-        && exists(/databases/$(database)/documents/members/$(me()));
+        && (exists(/databases/$(database)/documents/members/$(me()))
+          || exists(/databases/$(database)/documents/privateMembers/$(me())));
     }
+    // Acceso privado (por ejemplo, finanzas): no figura en el equipo y nadie ve sus tareas.
+    function isPrivate(id) { return exists(/databases/$(database)/documents/privateMembers/$(id)); }
     function isAdmin() { return signedIn() && exists(/databases/$(database)/documents/admins/$(request.auth.uid)); }
     // Ve el tablero del equipo y usa la caña.
     function isSupervisor() {
@@ -56,11 +59,34 @@ service cloud.firestore {
     // El equipo: lo ve cualquiera que abre la app (para elegir quién es); lo cambia quien administra.
     match /members/{id} {
       allow read: if signedIn();
+      // Cada uno solo puede marcar que ya cambió la contraseña que le dieron.
+      allow update: if isMember() && me() == id
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['mustChangePassword'])
+        && request.resource.data.mustChangePassword == false;
       allow create, update: if isAdminAfter()
-        && request.resource.data.keys().hasOnly(['name', 'email', 'createdAt', 'supervisor', 'hasPassword', 'country'])
+        && request.resource.data.keys().hasOnly(
+          ['name', 'email', 'createdAt', 'supervisor', 'hasPassword', 'country', 'mustChangePassword'])
+        && request.resource.data.get('mustChangePassword', false) is bool
         && request.resource.data.get('country', null) in [null, 'AR', 'CL', 'UY']
         && request.resource.data.get('supervisor', false) is bool
         && request.resource.data.get('hasPassword', false) is bool
+        && request.resource.data.name is string
+        && request.resource.data.name.size() > 0
+        && request.resource.data.name.size() <= 80
+        && request.resource.data.email is string
+        && request.resource.data.email.size() <= 120;
+      allow delete: if isAdmin();
+    }
+
+    // Personas con acceso privado: solo las ven quien administra y la persona misma.
+    match /privateMembers/{id} {
+      allow get: if isAdmin() || (isMember() && me() == id);
+      allow list: if isAdmin();
+      allow update: if isMember() && me() == id
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['mustChangePassword'])
+        && request.resource.data.mustChangePassword == false;
+      allow create, update: if isAdminAfter()
+        && request.resource.data.keys().hasOnly(['name', 'email', 'createdAt', 'hasPassword', 'mustChangePassword'])
         && request.resource.data.name is string
         && request.resource.data.name.size() > 0
         && request.resource.data.name.size() <= 80
@@ -85,7 +111,8 @@ service cloud.firestore {
       allow create, update: if signedIn() && request.auth.uid == uid
         && request.resource.data.keys().hasOnly(['memberId', 'hash', 'at'])
         && request.resource.data.memberId is string
-        && existsAfter(/databases/$(database)/documents/members/$(request.resource.data.memberId))
+        && (existsAfter(/databases/$(database)/documents/members/$(request.resource.data.memberId))
+          || existsAfter(/databases/$(database)/documents/privateMembers/$(request.resource.data.memberId)))
         && (
           // una compu que administra el equipo puede entrar como cualquiera (para arreglar contraseñas)
           isAdmin()
@@ -96,18 +123,21 @@ service cloud.firestore {
     }
 
     // Tareas del equipo: cada uno publica lo que tiene en el agua; lo ve todo el equipo.
+    // Quien tiene acceso privado no publica nada (y nadie puede publicar por ella).
     match /boards/{memberId} {
-      allow read: if isMember();
-      allow create, update: if isMember() && me() == memberId
+      allow read: if isMember() && !isPrivate(me());
+      allow create, update: if isMember() && me() == memberId && !isPrivate(memberId)
         && request.resource.data.memberId == memberId;
-      allow delete: if isMember() && me() == memberId;
+      allow delete: if (isMember() && me() == memberId) || isAdmin();
     }
 
     // La caña: "¿En qué andás?". La puede tirar cualquiera del equipo; contesta solo a quien le llegó.
     match /pings/{id} {
-      allow read: if isMember();
+      allow read: if isMember() && !isPrivate(me());
       allow create: if isMember()
         && request.resource.data.from == me()
+        && !isPrivate(me())
+        && !isPrivate(request.resource.data.to)
         && request.resource.data.keys().hasOnly(
           ['from', 'to', 'fromName', 'toName', 'question', 'createdAt', 'answer', 'answeredAt'])
         && request.resource.data.to is string

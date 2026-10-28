@@ -98,6 +98,8 @@ function ChooseForm() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [adminMode, setAdminMode] = useState(false);
+  const [emailMode, setEmailMode] = useState(false);
+  const [email, setEmail] = useState('');
   const [code, setCode] = useState('');
   const [password, setPassword] = useState('');
 
@@ -119,6 +121,45 @@ function ChooseForm() {
       setBusy(false);
     }
   };
+
+  if (emailMode) {
+    return (
+      <form
+        className="auth-form"
+        onSubmit={(e) => {
+          e.preventDefault();
+          void run(() => team.claimByEmail(email, password));
+        }}
+      >
+        <p className="auth-lead">Entrá con tu mail y tu contraseña.</p>
+        <label className="field">
+          <span>Mail</span>
+          <input className="input" type="email" value={email} onChange={(e) => setEmail(e.target.value)} autoComplete="email" autoFocus />
+        </label>
+        <label className="field">
+          <span>Contraseña</span>
+          <input
+            className="input"
+            type="password"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            autoComplete="current-password"
+          />
+        </label>
+        {error && (
+          <p className="hint hint--warn" role="alert">
+            {error}
+          </p>
+        )}
+        <button type="submit" className="btn btn-primary" disabled={busy || !email.trim() || !password.trim()}>
+          Entrar
+        </button>
+        <button type="button" className="link-btn" onClick={() => setEmailMode(false)}>
+          Volver a la lista
+        </button>
+      </form>
+    );
+  }
 
   if (adminMode) {
     return (
@@ -224,6 +265,17 @@ function ChooseForm() {
             : '¿No la sabés? Pedísela a quien administra el equipo.'}
         </p>
       )}
+      <button
+        type="button"
+        className="link-btn"
+        onClick={() => {
+          setEmailMode(true);
+          setError(null);
+          setPassword('');
+        }}
+      >
+        ¿No estás en la lista? Entrá con tu mail
+      </button>
       {isAdmin ? (
         <p className="hint center">Esta compu administra el equipo: podés entrar sin contraseña.</p>
       ) : (

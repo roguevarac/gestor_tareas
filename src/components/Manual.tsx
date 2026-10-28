@@ -132,10 +132,23 @@ const SECTIONS: Section[] = [
         text: (
           <>
             La primera vez en cada compu: tocá <K>Compartir</K>, elegí tu nombre y poné tu contraseña (te la da quien
-            administra el equipo). La compu te recuerda.
+            administra el equipo). La primera vez que entrás, la app te pide que elijas una tuya: desde ahí solo la
+            sabés vos. La compu te recuerda.
           </>
         ),
-        keys: 'login contraseña entrar',
+        keys: 'login contraseña entrar primera vez',
+      },
+      {
+        title: 'Acceso privado',
+        text: (
+          <>
+            Algunas personas (por ejemplo, de finanzas) tienen <b>acceso privado</b>: no aparecen en la lista del
+            equipo, nadie ve sus tareas (ni en Tareas del equipo ni con la caña) y ellas tampoco ven las del equipo.
+            Entran con <K>¿No estás en la lista? Entrá con tu mail</K>. Sus tareas personales quedan solo en su compu;
+            lo único que ven otros es lo que ellas mismas les manden.
+          </>
+        ),
+        keys: 'privado finanzas mail seguridad',
       },
       {
         title: 'Mandar un pez',
@@ -243,8 +256,10 @@ const SECTIONS: Section[] = [
         title: 'Contraseñas, oficinas y bajas',
         text: (
           <>
-            En cada persona: la <b>llavecita</b> cambia su contraseña, la <b>banderita</b> su oficina, y la ✕ la saca del
-            equipo. Tocando el nombre o el mail los corregís.
+            En cada persona: la <b>llavecita</b> le da una contraseña nueva (al entrar elige la suya), la{' '}
+            <b>banderita</b> su oficina, el <b>candado</b> la pasa a acceso privado (necesita el mail cargado) y la ✕
+            la saca del equipo. Tocando el nombre o el mail los corregís. Las personas con acceso privado están en su
+            propia lista, más abajo.
           </>
         ),
         keys: 'contraseña oficina borrar',

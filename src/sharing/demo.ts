@@ -14,6 +14,7 @@ interface DB {
   admins: Record<string, true>;
   claims: Record<string, string>;
   secrets: Record<string, string>;
+  privateMembers: Record<string, Omit<Profile, 'uid'>>;
   members: Record<string, Omit<Profile, 'uid'>>;
   shared: Record<string, Omit<SharedDoc, 'id'>>;
   boards: Record<string, Board>;
@@ -28,6 +29,7 @@ function load(): DB {
         admins: {},
         claims: {},
         secrets: {},
+        privateMembers: {},
         members: {},
         shared: {},
         boards: {},
@@ -45,6 +47,7 @@ function load(): DB {
     admins: {},
     claims: {},
     secrets: {},
+    privateMembers: {},
     members: {},
     shared: {},
     boards: {},
@@ -86,7 +89,8 @@ export function createDemoBackend(handle: string): Backend {
     async readTeam(d) {
       const db = load();
       const memberId = db.claims[d] ?? null;
-      return { setup: db.setup, memberId: memberId && db.members[memberId] ? memberId : null, admin: !!db.admins[d] };
+      const valid = memberId && (db.members[memberId] || db.privateMembers[memberId]);
+      return { setup: db.setup, memberId: valid ? memberId : null, admin: !!db.admins[d] };
     },
     async setupTeam(d, me, password, hashFor) {
       await delay();
@@ -105,7 +109,7 @@ export function createDemoBackend(handle: string): Backend {
     async claim(d, memberId, hash) {
       await delay();
       const db = load();
-      if (!db.members[memberId]) throw denied();
+      if (!db.members[memberId] && !db.privateMembers[memberId]) throw denied();
       if (!db.admins[d] && (!db.secrets[memberId] || db.secrets[memberId] !== hash)) throw denied();
       db.claims[d] = memberId;
       save(db);
@@ -129,7 +133,13 @@ export function createDemoBackend(handle: string): Backend {
       const db = load();
       if (!isAdmin(db)) throw denied();
       const id = newId();
-      db.members[id] = { name: m.name, email: m.email, country: m.country ?? null, hasPassword: true };
+      db.members[id] = {
+        name: m.name,
+        email: m.email,
+        country: m.country ?? null,
+        hasPassword: true,
+        mustChangePassword: true,
+      };
       db.secrets[id] = await hashFor(id);
       save(db);
       return id;
@@ -144,11 +154,63 @@ export function createDemoBackend(handle: string): Backend {
       const db = load();
       if (byAdmin ? !isAdmin(db) : db.claims[device] !== memberId) throw denied();
       db.secrets[memberId] = hash;
-      if (byAdmin && db.members[memberId]) db.members[memberId].hasPassword = true;
+      const m = db.members[memberId] ?? db.privateMembers[memberId];
+      if (byAdmin && m) {
+        m.hasPassword = true;
+        m.mustChangePassword = true;
+      }
+      save(db);
+    },
+    async clearMustChange(memberId) {
+      const db = load();
+      const m = db.members[memberId] ?? db.privateMembers[memberId];
+      if (m) m.mustChangePassword = false;
+      save(db);
+    },
+    async getPrivateMember(id) {
+      const db = load();
+      const m = db.privateMembers[id];
+      if (!m || (!isAdmin(db) && db.claims[device] !== id)) return null;
+      return { uid: id, ...m, private: true };
+    },
+    watchPrivateMembers(cb) {
+      return subscribe(() => {
+        const db = load();
+        cb(isAdmin(db) ? Object.entries(db.privateMembers).map(([uid, m]) => ({ uid, ...m, private: true })) : []);
+      });
+    },
+    async addPrivateMember(id, m, hash) {
+      const db = load();
+      if (!isAdmin(db)) throw denied();
+      db.privateMembers[id] = { name: m.name, email: m.email, hasPassword: true, mustChangePassword: true };
+      db.secrets[id] = hash;
+      save(db);
+    },
+    async makePrivate(oldId, newId, m, hash) {
+      const db = load();
+      if (!isAdmin(db)) throw denied();
+      db.privateMembers[newId] = { name: m.name, email: m.email, hasPassword: true, mustChangePassword: true };
+      db.secrets[newId] = hash;
+      delete db.members[oldId];
+      delete db.secrets[oldId];
+      delete db.boards[oldId];
+      save(db);
+    },
+    async removePrivateMember(id) {
+      const db = load();
+      if (!isAdmin(db)) throw denied();
+      delete db.privateMembers[id];
+      delete db.secrets[id];
+      save(db);
+    },
+    async deleteBoard(memberId) {
+      const db = load();
+      delete db.boards[memberId];
       save(db);
     },
     async saveBoard(b) {
       const db = load();
+      if (db.privateMembers[b.memberId]) throw denied();
       db.boards[b.memberId] = JSON.parse(JSON.stringify(b));
       save(db);
     },
@@ -164,7 +226,7 @@ export function createDemoBackend(handle: string): Backend {
       await delay();
       const db = load();
       const mine = db.claims[device];
-      if (!mine || !db.members[mine]) throw denied();
+      if (!mine || !db.members[mine] || db.privateMembers[p.to]) throw denied();
       const id = newId();
       db.pings[id] = { ...p };
       save(db);

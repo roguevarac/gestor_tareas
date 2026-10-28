@@ -52,8 +52,9 @@ export function startSupervision() {
   if (started) return;
   started = true;
   const sync = () => {
-    const { memberId, status } = useShared.getState();
-    const key = status === 'ready' && memberId ? memberId : '';
+    const { memberId, status, me } = useShared.getState();
+    // Quien tiene acceso privado no ve ni publica tareas del equipo, ni usa la caña.
+    const key = status === 'ready' && memberId && me && !me.private ? memberId : '';
     if (key === watchedFor) return;
     watchedFor = key;
     unwatch.forEach((u) => u());
@@ -146,9 +147,9 @@ function startBoardPublisher() {
   };
   const publish = () => {
     pendingSince = 0;
-    const { memberId, status } = useShared.getState();
+    const { memberId, status, me } = useShared.getState();
     const backend = getBackend();
-    if (status !== 'ready' || !memberId || !backend) return;
+    if (status !== 'ready' || !memberId || !backend || !me || me.private) return;
     const board = buildBoard(memberId);
     const sig = JSON.stringify({ ...board, updatedAt: 0 });
     if (sig === last) return;
@@ -161,10 +162,12 @@ function startBoardPublisher() {
   useTasks.subscribe(schedule);
   let lastDocs = useShared.getState().docs;
   let lastMember = useShared.getState().memberId;
+  let lastMe = useShared.getState().me;
   useShared.subscribe((s) => {
-    if (s.docs !== lastDocs || s.memberId !== lastMember) {
+    if (s.docs !== lastDocs || s.memberId !== lastMember || s.me !== lastMe) {
       lastDocs = s.docs;
       lastMember = s.memberId;
+      lastMe = s.me;
       last = '';
       schedule();
     }

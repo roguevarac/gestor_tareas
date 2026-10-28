@@ -13,6 +13,8 @@ interface ModalProps {
   /** 'center' (diálogo) o 'side' (panel que entra desde la derecha). */
   placement?: 'center' | 'side';
   className?: string;
+  /** Sin la ✕ ni cerrar con Escape o tocando afuera (pasos obligatorios). */
+  required?: boolean;
 }
 
 export function Modal({
@@ -24,16 +26,19 @@ export function Modal({
   size = 'md',
   placement = 'center',
   className = '',
+  required = false,
 }: ModalProps) {
   const panelRef = useRef<HTMLDivElement>(null);
   const onCloseRef = useRef(onClose);
   onCloseRef.current = onClose;
+  const requiredRef = useRef(required);
+  requiredRef.current = required;
 
   useEffect(() => {
     if (!open) return;
     const prev = document.activeElement as HTMLElement | null;
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') onCloseRef.current();
+      if (e.key === 'Escape' && !requiredRef.current) onCloseRef.current();
     };
     window.addEventListener('keydown', onKey);
     const t = window.setTimeout(() => {
@@ -58,7 +63,7 @@ export function Modal({
           exit={{ opacity: 0 }}
           transition={{ duration: 0.18 }}
         >
-          <div className="modal-backdrop" onClick={onClose} />
+          <div className="modal-backdrop" onClick={required ? undefined : onClose} />
           <motion.div
             ref={panelRef}
             role="dialog"
@@ -72,9 +77,11 @@ export function Modal({
           >
             <header className="modal-head">
               <div className="modal-title">{title}</div>
-              <button type="button" className="icon-btn" onClick={onClose} aria-label="Cerrar">
-                <IconX />
-              </button>
+              {!required && (
+                <button type="button" className="icon-btn" onClick={onClose} aria-label="Cerrar">
+                  <IconX />
+                </button>
+              )}
             </header>
             <div className="modal-body">{children}</div>
             {footer && <footer className="modal-foot">{footer}</footer>}

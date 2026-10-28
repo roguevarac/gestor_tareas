@@ -94,6 +94,7 @@ export function createFirebaseBackend(config: Record<string, string>): Backend {
                 email: v.email ?? '',
                 supervisor: v.supervisor === true,
                 hasPassword: v.hasPassword === true,
+                mustChangePassword: v.mustChangePassword === true,
                 country: ['AR', 'CL', 'UY'].includes(v.country) ? v.country : null,
               };
             }),
@@ -109,18 +110,96 @@ export function createFirebaseBackend(config: Record<string, string>): Backend {
         email: m.email,
         country: m.country ?? null,
         hasPassword: true,
+        mustChangePassword: true,
         createdAt: Date.now(),
       });
       batch.set(doc(db, 'memberSecrets', ref.id), { hash: await hashFor(ref.id) });
       await batch.commit();
       return ref.id;
     },
-    async setPassword(memberId, hash, byAdmin) {
+    async setPassword(memberId, hash, byAdmin, isPrivate = false) {
       const batch = writeBatch(db);
       batch.set(doc(db, 'memberSecrets', memberId), { hash });
-      if (byAdmin) batch.update(doc(db, 'members', memberId), { hasPassword: true });
+      if (byAdmin)
+        batch.update(doc(db, isPrivate ? 'privateMembers' : 'members', memberId), {
+          hasPassword: true,
+          mustChangePassword: true,
+        });
       await batch.commit();
     },
+    clearMustChange: (memberId, isPrivate) =>
+      updateDoc(doc(db, isPrivate ? 'privateMembers' : 'members', memberId), { mustChangePassword: false }),
+    async getPrivateMember(id) {
+      try {
+        const snap = await getDoc(doc(db, 'privateMembers', id));
+        if (!snap.exists()) return null;
+        const v = snap.data();
+        return {
+          uid: id,
+          name: v.name ?? '',
+          email: v.email ?? '',
+          hasPassword: v.hasPassword === true,
+          mustChangePassword: v.mustChangePassword === true,
+          private: true,
+        };
+      } catch {
+        return null;
+      }
+    },
+    watchPrivateMembers(cb, onError) {
+      return onSnapshot(
+        collection(db, 'privateMembers'),
+        (snap) =>
+          cb(
+            snap.docs.map((d): Profile => {
+              const v = d.data();
+              return {
+                uid: d.id,
+                name: v.name ?? '',
+                email: v.email ?? '',
+                hasPassword: v.hasPassword === true,
+                mustChangePassword: v.mustChangePassword === true,
+                private: true,
+              };
+            }),
+          ),
+        onError,
+      );
+    },
+    async addPrivateMember(id, m, hash) {
+      const batch = writeBatch(db);
+      batch.set(doc(db, 'privateMembers', id), {
+        name: m.name,
+        email: m.email,
+        hasPassword: true,
+        mustChangePassword: true,
+        createdAt: Date.now(),
+      });
+      batch.set(doc(db, 'memberSecrets', id), { hash });
+      await batch.commit();
+    },
+    async makePrivate(oldId, newId, m, hash) {
+      const batch = writeBatch(db);
+      batch.set(doc(db, 'privateMembers', newId), {
+        name: m.name,
+        email: m.email,
+        hasPassword: true,
+        mustChangePassword: true,
+        createdAt: Date.now(),
+      });
+      batch.set(doc(db, 'memberSecrets', newId), { hash });
+      batch.delete(doc(db, 'members', oldId));
+      batch.delete(doc(db, 'memberSecrets', oldId));
+      batch.delete(doc(db, 'boards', oldId));
+      await batch.commit();
+    },
+    async removePrivateMember(id) {
+      const batch = writeBatch(db);
+      batch.delete(doc(db, 'privateMembers', id));
+      batch.delete(doc(db, 'memberSecrets', id));
+      await batch.commit();
+    },
+    deleteBoard: (memberId) => deleteDoc(doc(db, 'boards', memberId)),
     updateMember: (id, m) =>
       updateDoc(doc(db, 'members', id), { name: m.name, email: m.email, country: m.country ?? null }),
     saveBoard: (b) => setDoc(doc(db, 'boards', b.memberId), b),

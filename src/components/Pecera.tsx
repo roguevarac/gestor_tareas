@@ -15,9 +15,9 @@ import { Modal } from './Modal';
 import { SpeciesFish } from './Fishes';
 import { Avatar } from './Avatar';
 import { EditableText } from './EditableText';
-import { IconCopy, IconKey, IconLogout, IconPlus, IconSend, IconX } from './Icons';
+import { IconCopy, IconKey, IconLock, IconLogout, IconPlus, IconSend, IconX } from './Icons';
 import { COUNTRIES, Flag } from './Flags';
-import type { Country } from '../sharing/types';
+import type { Country, Profile } from '../sharing/types';
 import { copyText } from './MailLinks';
 import { APP_URL } from './SendFishDialog';
 
@@ -54,6 +54,11 @@ export function Pecera() {
                 {me.email}
                 {backendKind === 'demo' ? `${me.email ? ' · ' : ''}modo prueba` : ''}
               </small>
+              {me.private && (
+                <small className="pecera-private">
+                  <IconLock size={12} /> Acceso privado: no figurás en el equipo y nadie ve tus tareas.
+                </small>
+              )}
               <MyPassword memberId={me.uid} />
             </div>
             <button
@@ -129,8 +134,11 @@ export function Pecera() {
       </section>
 
       {isAdmin ? (
-        <TeamSection />
-      ) : (
+        <>
+          <TeamSection />
+          <PrivateSection />
+        </>
+      ) : me?.private ? null : (
         <section className="pecera-section pecera-invite">
           <h3>Sumar gente</h3>
           <p className="muted small">Para sumar a alguien al equipo, pedíselo a quien lo administra.</p>
@@ -163,6 +171,7 @@ function TeamSection() {
   const [busy, setBusy] = useState(false);
   const [confirm, setConfirm] = useState<string | null>(null);
   const [pwFor, setPwFor] = useState<string | null>(null);
+  const [privFor, setPrivFor] = useState<string | null>(null);
   const sorted = [...members].sort((a, b) => a.name.localeCompare(b.name, 'es'));
 
   const add = async () => {
@@ -217,6 +226,18 @@ function TeamSection() {
             >
               <IconKey size={16} />
             </button>
+            {m.uid !== memberId && (
+              <button
+                type="button"
+                className="icon-btn"
+                onClick={() => setPrivFor(privFor === m.uid ? null : m.uid)}
+                aria-expanded={privFor === m.uid}
+                aria-label={`Pasar a ${m.name} a acceso privado`}
+                title="Pasar a acceso privado"
+              >
+                <IconLock size={15} />
+              </button>
+            )}
             <label className={`country-pick ${m.country ? '' : 'is-empty'}`} title="Oficina">
               {m.country ? <Flag country={m.country} width={20} /> : <span className="country-none">🌎</span>}
               <select
@@ -266,6 +287,7 @@ function TeamSection() {
                 onCancel={() => setPwFor(null)}
               />
             )}
+            {privFor === m.uid && <MakePrivate member={m} onDone={() => setPrivFor(null)} />}
           </li>
         ))}
       </ul>
@@ -317,9 +339,168 @@ function TeamSection() {
         </button>
       </form>
       <p className="hint muted">
-        Cada persona abre la app, toca Compartir, elige su nombre y pone la contraseña que le diste. Con la
-        banderita elegís la oficina de cada uno.
+        Cada persona abre la app, toca Compartir, elige su nombre y pone la contraseña que le diste; la primera vez
+        elige una suya. Con la banderita elegís la oficina y con el candado le das acceso privado.
       </p>
+    </section>
+  );
+}
+
+/** Pasar a alguien del equipo a acceso privado, con una contraseña temporal. */
+function MakePrivate({ member, onDone }: { member: Profile; onDone(): void }) {
+  const toast = useUI((s) => s.toast);
+  if (!member.email.trim())
+    return (
+      <p className="hint hint--warn team-private-note">
+        Primero cargale el mail (tocá «agregar mail»): con acceso privado se entra con el mail.
+      </p>
+    );
+  return (
+    <div className="team-private-note">
+      <p className="hint">
+        <b>Acceso privado</b>: {firstName(member.name)} deja de figurar en el equipo, nadie (ni quien administra) ve
+        sus tareas, no le pueden tirar la caña y no ve las del equipo. Entra con su mail y esta contraseña
+        temporal, y la primera vez elige la suya.
+      </p>
+      <PasswordForm
+        label="Contraseña temporal"
+        onSave={async (pw) => {
+          await team.makePrivate(member, pw);
+          onDone();
+          toast(`${firstName(member.name)} ya tiene acceso privado. Pasale su contraseña temporal.`);
+        }}
+        onCancel={onDone}
+      />
+    </div>
+  );
+}
+
+/** Solo para quien administra: personas con acceso privado (no figuran en el equipo). */
+function PrivateSection() {
+  const people = useShared((s) => s.privateUsers);
+  const toast = useUI((s) => s.toast);
+  const [name, setName] = useState('');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [busy, setBusy] = useState(false);
+  const [pwFor, setPwFor] = useState<string | null>(null);
+  const [confirm, setConfirm] = useState<string | null>(null);
+  const sorted = [...people].sort((a, b) => a.name.localeCompare(b.name, 'es'));
+
+  const add = async () => {
+    setBusy(true);
+    try {
+      await team.addPrivate(name, email, password);
+      toast(`${firstName(name)} tiene acceso privado. Pasale el link, su mail y la contraseña.`);
+      setName('');
+      setEmail('');
+      setPassword('');
+    } catch (e) {
+      toast(e instanceof Error ? e.message : 'No pude sumarla');
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  return (
+    <section className="pecera-section">
+      <h3>
+        <IconLock size={15} /> Acceso privado <span className="pond-count">{people.length}</span>
+      </h3>
+      <p className="hint muted">
+        No aparecen en la lista del equipo ni en Tareas del equipo, nadie ve sus tareas y no les llega la caña. Entran
+        con su mail.
+      </p>
+      {sorted.length > 0 && (
+        <ul className="team-list">
+          {sorted.map((m) => (
+            <li key={m.uid} className="team-item">
+              <div className="team-row">
+                <Avatar uid={m.uid} name={m.name} size={28} />
+                <div className="team-main">
+                  <span className="team-name">{m.name}</span>
+                  <span className="team-email">{m.email}</span>
+                  {m.mustChangePassword && <small className="muted">Todavía no eligió su contraseña</small>}
+                </div>
+                <button
+                  type="button"
+                  className="icon-btn team-key"
+                  onClick={() => setPwFor(pwFor === m.uid ? null : m.uid)}
+                  aria-expanded={pwFor === m.uid}
+                  aria-label={`Contraseña de ${m.name}`}
+                  title="Darle una contraseña nueva (si se la olvidó)"
+                >
+                  <IconKey size={16} />
+                </button>
+                {confirm === m.uid ? (
+                  <span className="team-confirm">
+                    <button type="button" className="btn btn-danger btn-sm" onClick={() => void team.removePrivate(m.uid)}>
+                      Sacar
+                    </button>
+                    <button type="button" className="btn btn-ghost btn-sm" onClick={() => setConfirm(null)}>
+                      No
+                    </button>
+                  </span>
+                ) : (
+                  <button
+                    type="button"
+                    className="icon-btn"
+                    onClick={() => setConfirm(m.uid)}
+                    aria-label={`Sacarle el acceso a ${m.name}`}
+                    title="Sacarle el acceso"
+                  >
+                    <IconX size={15} />
+                  </button>
+                )}
+              </div>
+              {pwFor === m.uid && (
+                <PasswordForm
+                  label={`Contraseña temporal para ${firstName(m.name)}`}
+                  onSave={async (pw) => {
+                    await team.setPassword(m.uid, pw, { isPrivate: true });
+                    setPwFor(null);
+                    toast(`Listo. Al entrar, ${firstName(m.name)} va a elegir una nueva.`);
+                  }}
+                  onCancel={() => setPwFor(null)}
+                />
+              )}
+            </li>
+          ))}
+        </ul>
+      )}
+      <form
+        className="team-add"
+        onSubmit={(e) => {
+          e.preventDefault();
+          void add();
+        }}
+      >
+        <input className="input" value={name} onChange={(e) => setName(e.target.value)} placeholder="Nombre" aria-label="Nombre (acceso privado)" />
+        <input
+          className="input"
+          type="email"
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+          placeholder="Mail"
+          aria-label="Mail (acceso privado)"
+        />
+        <input
+          className="input"
+          type="text"
+          value={password}
+          onChange={(e) => setPassword(e.target.value)}
+          placeholder="Contraseña temporal"
+          aria-label="Contraseña temporal (acceso privado)"
+          autoComplete="off"
+        />
+        <button
+          type="submit"
+          className="btn btn-secondary"
+          disabled={busy || !name.trim() || !email.trim() || password.trim().length < MIN_PASSWORD}
+        >
+          <IconPlus size={16} /> Sumar
+        </button>
+      </form>
     </section>
   );
 }

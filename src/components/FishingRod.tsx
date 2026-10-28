@@ -26,7 +26,7 @@ export function RodIcon({ size = 18 }: { size?: number }) {
  * la pregunta "¿En qué andás?" como carnada.
  */
 export function FishingRod() {
-  const ready = useShared((s) => s.status === 'ready');
+  const ready = useShared((s) => s.status === 'ready' && !!s.me && !s.me.private);
   const open = useSupervision((s) => s.rodOpen);
   const users = useShared((s) => s.users);
   const me = useShared((s) => s.memberId);

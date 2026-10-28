@@ -166,6 +166,15 @@ Source: GitHub Actions**. En repos privados, GitHub Pages necesita un plan pago 
 
 ## Cambios
 
+### 2.2
+
+- **Acceso privado** (por ejemplo, finanzas): no figura en la lista del equipo ni en Tareas del equipo, nadie ve sus
+  tareas (ni quien administra), no le llega la caña y no ve las tareas del equipo. Entra con su mail. Las reglas del
+  servidor lo hacen cumplir: su tablero no se puede publicar ni leer.
+- **Primera vez = contraseña propia**: cuando quien administra pone o cambia una contraseña, al entrar la persona
+  elige la suya (no se puede saltear).
+- Hay que volver a publicar las reglas (`firebase deploy --only firestore:rules`).
+
 ### 2.1.1
 
 - Se saca el cofre de la pantalla (las oficinas siguen).
