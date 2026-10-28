@@ -21,7 +21,6 @@ import { TeamBoard } from './components/TeamBoard';
 import { FishingRod } from './components/FishingRod';
 import { Bait } from './components/Bait';
 import { UpdateBanner } from './components/UpdateBanner';
-import { Chest } from './components/Chest';
 import { Manual } from './components/Manual';
 import { Matrix, readView, ViewSwitch, type View } from './components/Matrix';
 
@@ -49,7 +48,6 @@ export default function App() {
           </main>
         )}
       </div>
-      <Chest />
       <Bucket />
       <FishOverlay />
       <TaskDetail />

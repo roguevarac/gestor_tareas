@@ -222,16 +222,6 @@ const SECTIONS: Section[] = [
         ),
         keys: 'caña pregunta carnada',
       },
-      {
-        title: 'El cofre',
-        text: (
-          <>
-            Abajo a la izquierda, el cofre abandonado lleva la bandera de tu oficina. La oficina de cada uno la elige
-            quien administra el equipo.
-          </>
-        ),
-        keys: 'bandera oficina pais',
-      },
     ],
   },
   {

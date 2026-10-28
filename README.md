@@ -166,11 +166,15 @@ Source: GitHub Actions**. En repos privados, GitHub Pages necesita un plan pago 
 
 ## Cambios
 
+### 2.1.1
+
+- Se saca el cofre de la pantalla (las oficinas siguen).
+
 ### 2.1
 
 - Manual de uso (botón *Manual* arriba).
-- Oficina de cada persona (Argentina, Chile, Uruguay), la asigna quien administra; cofre abandonado con la bandera
-  abajo a la izquierda; *Tareas del equipo* se recorre por oficina y después por persona.
+- Oficina de cada persona (Argentina, Chile, Uruguay), la asigna quien administra; *Tareas del equipo* se recorre
+  por oficina y después por persona.
 - La caña (“¿En qué andás?”) la tienen todos.
 - Se sacan el registro de tiempo al tirar al balde (queda *Deshacer*) y la copia de seguridad del menú.
 
