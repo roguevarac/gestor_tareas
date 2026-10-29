@@ -142,8 +142,10 @@ export function createFirebaseBackend(config: Record<string, string>): Backend {
           mustChangePassword: v.mustChangePassword === true,
           private: true,
         };
-      } catch {
-        return null;
+      } catch (e) {
+        // Sin permiso = esta compu ya no es esa persona. Otro error (sin conexión): que se reintente.
+        if ((e as { code?: string }).code === 'permission-denied') return null;
+        throw e;
       }
     },
     watchPrivateMembers(cb, onError) {
@@ -199,6 +201,7 @@ export function createFirebaseBackend(config: Record<string, string>): Backend {
       const batch = writeBatch(db);
       batch.delete(doc(db, 'privateMembers', id));
       batch.delete(doc(db, 'privateContacts', id));
+      batch.delete(doc(db, 'vaults', id));
       batch.delete(doc(db, 'memberSecrets', id));
       await batch.commit();
     },
@@ -211,9 +214,16 @@ export function createFirebaseBackend(config: Record<string, string>): Backend {
       );
     },
     ensureContact: (id, name) => setDoc(doc(db, 'privateContacts', id), { name }),
+    async getVault(memberId) {
+      const snap = await getDoc(doc(db, 'vaults', memberId));
+      if (!snap.exists()) return null;
+      const v = snap.data();
+      return { iv: String(v.iv ?? ''), data: String(v.data ?? ''), updatedAt: Number(v.updatedAt ?? 0) };
+    },
+    putVault: (memberId, v) => setDoc(doc(db, 'vaults', memberId), { iv: v.iv, data: v.data, updatedAt: v.updatedAt }),
     async rulesOk() {
       try {
-        await getDoc(doc(db, 'config', 'rules-v3'));
+        await getDoc(doc(db, 'config', 'rules-v4'));
         return true;
       } catch (e) {
         return (e as { code?: string }).code !== 'permission-denied';

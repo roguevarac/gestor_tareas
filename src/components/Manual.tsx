@@ -146,8 +146,9 @@ const SECTIONS: Section[] = [
             equipo de Admin, nadie ve sus tareas (ni en Tareas del equipo ni con la caña) y ellas tampoco ven las del equipo.
             Peces sí: se les puede mandar uno (en <K>Mandar un pez</K> están bajo <b>Finance</b>) y ellas también
             mandan. Entran con{' '}
-            <K>¿No estás en la lista? Entrá con tu mail</K>. Sus tareas personales quedan solo en su compu; lo único
-            que ven otros es lo que se mandan.
+            <K>¿No estás en la lista? Entrá con tu mail</K>. Sus tareas se guardan en el servidor <b>cifradas con su
+            contraseña</b> (nadie más las puede leer): si se borra el navegador o entra desde otra compu, al entrar las
+            recupera. Lo único que ven otros es lo que se mandan.
           </>
         ),
         keys: 'privado finanzas finance admin mail seguridad',

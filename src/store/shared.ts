@@ -1,4 +1,5 @@
 import { useMemo } from 'react';
+import { deriveVaultKey, forgetVaultKey, loadVaultKey, saveVaultKey } from '../lib/vault';
 import { create } from 'zustand';
 import type { MailLink, Task } from '../types';
 import type { Backend, Country, DocPatch, Profile, SharedDoc } from '../sharing/types';
@@ -250,6 +251,10 @@ function syncMe() {
       set({ me: null });
       setMember(null, 'choose');
     }
+  }, () => {
+    // Sin conexión (o un error pasajero): no la saco; pruebo de nuevo en un rato.
+    loadingPrivate = null;
+    setTimeout(syncMe, 5000);
   });
 }
 
@@ -431,9 +436,15 @@ export const team = {
   async claimByEmail(email: string, password: string) {
     if (!email.trim() || !password.trim()) throw new Error('Poné tu mail y tu contraseña.');
     const id = await privateIdFor(email);
+    // La llave de su copia cifrada sale de la contraseña y queda solo en esta compu
+    // (se guarda antes de entrar, para que al entrar ya pueda recuperar sus tareas).
+    const hadKey = loadVaultKey(id);
+    saveVaultKey(id, await deriveVaultKey(id, password));
     try {
       await team.claim(id, password);
     } catch {
+      if (hadKey) saveVaultKey(id, hadKey);
+      else forgetVaultKey(id);
       throw new Error('Mail o contraseña incorrectos.');
     }
   },
@@ -452,6 +463,11 @@ export const team = {
       async () => backend!.setPassword(memberId, await passwordHash(memberId, pw), byAdmin, isPrivate),
       'No pude cambiar la contraseña',
     );
+    if (mine && isPrivate) {
+      // Su copia en el servidor se vuelve a cifrar con la contraseña nueva.
+      saveVaultKey(memberId, await deriveVaultKey(memberId, pw));
+      void import('./vault').then((v) => v.pushVaultNow());
+    }
     if (mine && get().me?.mustChangePassword) {
       await backend.clearMustChange(memberId, isPrivate).catch(() => {});
       set((s) => {
@@ -492,7 +508,9 @@ export const team = {
   /** Cambiar de persona en esta compu. */
   async leave() {
     const d = needDevice();
+    const was = get().memberId;
     await wrap(() => backend!.unclaim(d), 'No pude salir');
+    if (was) forgetVaultKey(was);
     setMember(null, 'choose');
   },
   async becomeAdmin(code: string) {

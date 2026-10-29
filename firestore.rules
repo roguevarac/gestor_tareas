@@ -35,7 +35,7 @@ service cloud.firestore {
     }
 
     // Marca de versión: si se puede leer, las reglas publicadas ya traen Finance (2.3 o más nuevas).
-    match /config/rules-v3 {
+    match /config/rules-v4 {
       allow get: if signedIn();
     }
 
@@ -130,12 +130,25 @@ service cloud.firestore {
         && (existsAfter(/databases/$(database)/documents/members/$(request.resource.data.memberId))
           || existsAfter(/databases/$(database)/documents/privateMembers/$(request.resource.data.memberId)))
         && (
-          // una compu que administra el equipo puede entrar como cualquiera (para arreglar contraseñas)
-          isAdmin()
+          // una compu que administra el equipo puede entrar como cualquiera de Admin (para arreglar contraseñas),
+          // pero nunca como alguien de Finance: para eso hay que saber su contraseña.
+          (isAdmin() && !existsAfter(/databases/$(database)/documents/privateMembers/$(request.resource.data.memberId)))
           || request.resource.data.hash
             == getAfter(/databases/$(database)/documents/memberSecrets/$(request.resource.data.memberId)).data.hash
         );
       allow delete: if signedIn() && request.auth.uid == uid;
+    }
+
+    // Copia de las tareas de cada uno, cifrada con su contraseña: solo la lee y la escribe esa persona.
+    match /vaults/{memberId} {
+      allow get: if isMember() && me() == memberId;
+      allow create, update: if isMember() && me() == memberId
+        && request.resource.data.keys().hasOnly(['iv', 'data', 'updatedAt'])
+        && request.resource.data.iv is string
+        && request.resource.data.data is string
+        && request.resource.data.data.size() < 1000000
+        && request.resource.data.updatedAt is int;
+      allow delete: if (isMember() && me() == memberId) || isAdmin();
     }
 
     // Tareas del equipo: cada uno publica lo que tiene en el agua; lo ve todo el equipo.

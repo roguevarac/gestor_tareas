@@ -134,7 +134,7 @@ export interface Backend {
   setPassword(memberId: string, hash: string, byAdmin: boolean, isPrivate?: boolean): Promise<void>;
   /** La persona ya eligió su contraseña. */
   clearMustChange(memberId: string, isPrivate: boolean): Promise<void>;
-  /** Personas con acceso privado (solo quien administra; o la persona misma con su id). */
+  /** Personas con acceso privado (solo quien administra; o la persona misma con su id). Null = no existe; si falla la conexión, tira error. */
   getPrivateMember(id: string): Promise<Profile | null>;
   watchPrivateMembers(cb: (members: Profile[]) => void, onError: (e: unknown) => void): () => void;
   addPrivateMember(id: string, m: { name: string; email: string }, hash: string): Promise<void>;
@@ -144,6 +144,9 @@ export interface Backend {
   /** A quién le pueden mandar peces las personas con acceso privado (solo el nombre; lo ve el equipo). */
   watchContacts(cb: (contacts: Profile[]) => void, onError: (e: unknown) => void): () => void;
   ensureContact(id: string, name: string): Promise<void>;
+  /** Copia cifrada de las tareas (solo la puede leer y escribir la persona misma). */
+  getVault(memberId: string): Promise<{ iv: string; data: string; updatedAt: number } | null>;
+  putVault(memberId: string, v: { iv: string; data: string; updatedAt: number }): Promise<void>;
   /** ¿Las reglas publicadas en el servidor son las de esta versión? */
   rulesOk(): Promise<boolean>;
   deleteBoard(memberId: string): Promise<void>;

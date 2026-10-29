@@ -2,7 +2,8 @@ import { useState } from 'react';
 import { acceptFish, declineFish, MIN_PASSWORD, team, useIncoming, useSent, useShared } from '../store/shared';
 import { useUI } from '../store/ui';
 import { firstName } from '../sharing/logic';
-import { todayLong } from '../lib/time';
+import { ago, todayLong } from '../lib/time';
+import { useVault } from '../store/vault';
 import { Modal } from './Modal';
 import { SpeciesFish } from './Fishes';
 import { Avatar } from './Avatar';
@@ -51,6 +52,7 @@ export function Pecera() {
                   <IconLock size={12} /> Finance: nadie ve tus tareas; solo lo que vos mandes o te manden.
                 </small>
               )}
+              {me.private && <VaultStatus />}
               <MyPassword memberId={me.uid} />
             </div>
             <button
@@ -348,6 +350,32 @@ function TeamSection() {
         elige una suya. Con la banderita elegís la oficina y con Admin/Finance, el equipo.
       </p>
     </section>
+  );
+}
+
+/** Finance: si su copia cifrada está al día. */
+function VaultStatus() {
+  const { state, savedAt } = useVault();
+  const text =
+    state === 'ok'
+      ? `Tus tareas están guardadas (cifradas)${savedAt ? ` · ${ago(savedAt)}` : ''}`
+      : state === 'loading'
+        ? 'Buscando tus tareas guardadas…'
+        : state === 'needs-key'
+          ? 'Tus tareas todavía no se guardan en el servidor'
+          : state === 'error'
+            ? 'No pude guardar tus tareas; lo vuelvo a intentar'
+            : null;
+  if (!text) return null;
+  return (
+    <small className={`pecera-private ${state === 'ok' ? '' : 'is-warn'}`}>
+      {text}
+      {state === 'needs-key' && (
+        <button type="button" className="link-btn" onClick={() => useVault.setState({ promptLater: false })}>
+          Activar
+        </button>
+      )}
+    </small>
   );
 }
 

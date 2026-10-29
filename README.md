@@ -166,6 +166,14 @@ Source: GitHub Actions**. En repos privados, GitHub Pages necesita un plan pago 
 
 ## Cambios
 
+### 2.4
+
+- Finance: copia de las tareas en el servidor, **cifrada con su contraseña** (AES-GCM, llave PBKDF2). Si se borra
+  el navegador o entra desde otra compu, al entrar recupera todo. Nadie más la puede leer.
+- Una compu que administra ya no puede entrar como alguien de Finance sin su contraseña.
+- Un corte de conexión ya no saca a alguien de Finance de su sesión.
+- Hay que volver a publicar las reglas.
+
 ### 2.3.1
 
 - Si el servidor tiene las reglas viejas, la Pecera de quien administra lo avisa.

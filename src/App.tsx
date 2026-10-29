@@ -23,11 +23,15 @@ import { Bait } from './components/Bait';
 import { UpdateBanner } from './components/UpdateBanner';
 import { Manual } from './components/Manual';
 import { PasswordGate } from './components/PasswordGate';
+import { VaultPrompt } from './components/VaultPrompt';
 import { Matrix, readView, ViewSwitch, type View } from './components/Matrix';
 
 export default function App() {
   useEffect(() => syncAcrossTabs(), []);
-  useEffect(() => void startSharing(), []);
+  useEffect(() => {
+    void startSharing();
+    void import('./store/vault').then((v) => v.startVault());
+  }, []);
   useIncomingMail();
   const [view, setView] = useState<View>(readView);
 
@@ -66,6 +70,7 @@ export default function App() {
       <Bait />
       <Manual />
       <PasswordGate />
+      <VaultPrompt />
       <UpdateBanner />
       <Toasts />
     </>

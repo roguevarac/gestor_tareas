@@ -19,6 +19,7 @@ interface DB {
   shared: Record<string, Omit<SharedDoc, 'id'>>;
   boards: Record<string, Board>;
   pings: Record<string, Omit<Ping, 'id'>>;
+  vaults?: Record<string, { iv: string; data: string; updatedAt: number }>;
 }
 
 function load(): DB {
@@ -110,7 +111,8 @@ export function createDemoBackend(handle: string): Backend {
       await delay();
       const db = load();
       if (!db.members[memberId] && !db.privateMembers[memberId]) throw denied();
-      if (!db.admins[d] && (!db.secrets[memberId] || db.secrets[memberId] !== hash)) throw denied();
+      const adminBypass = db.admins[d] && !db.privateMembers[memberId];
+      if (!adminBypass && (!db.secrets[memberId] || db.secrets[memberId] !== hash)) throw denied();
       db.claims[d] = memberId;
       save(db);
     },
@@ -188,6 +190,17 @@ export function createDemoBackend(handle: string): Backend {
       });
     },
     async ensureContact() {},
+    async getVault(memberId) {
+      const db = load();
+      if (db.claims[device] !== memberId) throw denied();
+      return db.vaults?.[memberId] ?? null;
+    },
+    async putVault(memberId, v) {
+      const db = load();
+      if (db.claims[device] !== memberId) throw denied();
+      db.vaults = { ...db.vaults, [memberId]: v };
+      save(db);
+    },
     async rulesOk() {
       return !new URLSearchParams(location.search).has('oldrules');
     },

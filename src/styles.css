@@ -4813,3 +4813,9 @@ body.portal-open {
   color: #6b4300;
   font-size: 0.86rem;
 }
+.pecera-private.is-warn {
+  color: #8a5a00;
+}
+.pecera-private .link-btn {
+  margin-left: 6px;
+}
