@@ -166,6 +166,12 @@ Source: GitHub Actions**. En repos privados, GitHub Pages necesita un plan pago 
 
 ## Cambios
 
+### 2.4.1
+
+- Si la compu borra el navegador al apagarse, al abrir la app se pide entrar enseguida y vuelven las tareas.
+- Lo que se anota antes de entrar ya no pisa la copia guardada: se juntan las dos cosas.
+- Se le pide al navegador que no borre los datos de la app por su cuenta.
+
 ### 2.4
 
 - Finance: copia de las tareas en el servidor, **cifrada con su contraseña** (AES-GCM, llave PBKDF2). Si se borra

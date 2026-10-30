@@ -186,6 +186,7 @@ function watchPrivateIfAdmin() {
   }, () => {});
 }
 
+let askedLogin = false;
 async function refreshTeam() {
   const deviceId = get().deviceId;
   if (!backend || !deviceId) return;
@@ -194,7 +195,15 @@ async function refreshTeam() {
     set({ isAdmin: team.admin });
     watchPrivateIfAdmin();
     if (!team.setup) setMember(null, 'setup');
-    else setMember(team.memberId, team.memberId ? 'ready' : 'choose');
+    else {
+      setMember(team.memberId, team.memberId ? 'ready' : 'choose');
+      // Esta compu no tiene sesión (primera vez, o el navegador se borró al apagar): pedir que entre
+      // enseguida, así vuelven sus tareas guardadas y los peces.
+      if (!team.memberId && !askedLogin) {
+        askedLogin = true;
+        set({ authOpen: true });
+      }
+    }
   } catch (e) {
     fail(e);
   }

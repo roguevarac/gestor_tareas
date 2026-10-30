@@ -4819,3 +4819,6 @@ body.portal-open {
 .pecera-private .link-btn {
   margin-left: 6px;
 }
+.auth-form > .btn-primary + .btn-secondary {
+  margin-top: 8px;
+}

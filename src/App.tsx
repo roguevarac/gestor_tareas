@@ -30,6 +30,8 @@ export default function App() {
   useEffect(() => syncAcrossTabs(), []);
   useEffect(() => {
     void startSharing();
+    // Pedirle al navegador que no borre los datos de la app por su cuenta (cuando le falta espacio).
+    void navigator.storage?.persist?.().catch(() => {});
     void import('./store/vault').then((v) => v.startVault());
   }, []);
   useIncomingMail();

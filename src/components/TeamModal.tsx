@@ -131,10 +131,18 @@ function ChooseForm() {
           void run(() => team.claimByEmail(email, password));
         }}
       >
-        <p className="auth-lead">Entrá con tu mail y tu contraseña.</p>
+        <p className="auth-lead">Entrá con tu mail y tu contraseña: tus tareas guardadas vuelven solas.</p>
         <label className="field">
           <span>Mail</span>
-          <input className="input" type="email" value={email} onChange={(e) => setEmail(e.target.value)} autoComplete="email" autoFocus />
+          <input
+            className="input"
+            type="email"
+            name="username"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            autoComplete="username"
+            autoFocus
+          />
         </label>
         <label className="field">
           <span>Contraseña</span>
@@ -143,6 +151,7 @@ function ChooseForm() {
             type="password"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
+            name="password"
             autoComplete="current-password"
           />
         </label>
@@ -267,7 +276,7 @@ function ChooseForm() {
       )}
       <button
         type="button"
-        className="link-btn"
+        className="btn btn-secondary"
         onClick={() => {
           setEmailMode(true);
           setError(null);
