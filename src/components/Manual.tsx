@@ -148,7 +148,8 @@ const SECTIONS: Section[] = [
             mandan. Entran con{' '}
             <K>¿No estás en la lista? Entrá con tu mail</K>. Sus tareas se guardan en el servidor <b>cifradas con su
             contraseña</b> (nadie más las puede leer): si se borra el navegador o entra desde otra compu, al entrar las
-            recupera. Lo único que ven otros es lo que se mandan.
+            recupera. Si el navegador le guardó la contraseña, al abrir la app entra sola (aunque la compu borre todo
+            al apagarse). Lo único que ven otros es lo que se mandan.
           </>
         ),
         keys: 'privado finanzas finance admin mail seguridad',
