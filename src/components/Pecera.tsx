@@ -55,17 +55,20 @@ export function Pecera() {
               {me.private && <VaultStatus />}
               <MyPassword memberId={me.uid} />
             </div>
-            <button
-              type="button"
-              className="btn btn-ghost btn-sm"
-              onClick={() => {
-                close();
-                void team.leave().catch((e: Error) => toast(e.message));
-              }}
-              title="Si esta compu la usa otra persona"
-            >
-              <IconLogout size={15} /> No soy {firstName(me.name)}
-            </button>
+            {/* Finance no tiene "No soy …": su compu es suya y entra sola. */}
+            {!me.private && (
+              <button
+                type="button"
+                className="btn btn-ghost btn-sm"
+                onClick={() => {
+                  close();
+                  void team.leave().catch((e: Error) => toast(e.message));
+                }}
+                title="Si esta compu la usa otra persona"
+              >
+                <IconLogout size={15} /> No soy {firstName(me.name)}
+              </button>
+            )}
           </div>
         )
       }

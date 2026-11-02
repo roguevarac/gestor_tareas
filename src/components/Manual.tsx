@@ -198,7 +198,7 @@ const SECTIONS: Section[] = [
         text: (
           <>
             Los peces que te mandaron y todavía no respondiste, y el botón para mandar uno nuevo. Abajo, tu nombre y{' '}
-            <K>Cambiar mi contraseña</K>. Si la compu la usa otra persona: <K>No soy …</K>.
+            <K>Cambiar mi contraseña</K>. Si la compu la usa otra persona: <K>No soy …</K> (Finance no lo tiene).
           </>
         ),
       },
