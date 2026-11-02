@@ -166,6 +166,11 @@ Source: GitHub Actions**. En repos privados, GitHub Pages necesita un plan pago 
 
 ## Cambios
 
+### 2.4.2
+
+- Finance entra sola al abrir la app, aunque la compu borre el navegador al apagarse: el acceso queda en el
+  administrador de contraseñas del navegador (Credential Management API). *No soy …* lo desactiva.
+
 ### 2.4.1
 
 - Si la compu borra el navegador al apagarse, al abrir la app se pide entrar enseguida y vuelven las tareas.

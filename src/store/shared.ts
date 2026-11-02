@@ -1,5 +1,6 @@
 import { useMemo } from 'react';
 import { deriveVaultKey, forgetVaultKey, loadVaultKey, saveVaultKey } from '../lib/vault';
+import { forgetLogin, recallLogin, rememberLogin } from '../lib/autoLogin';
 import { create } from 'zustand';
 import type { MailLink, Task } from '../types';
 import type { Backend, Country, DocPatch, Profile, SharedDoc } from '../sharing/types';
@@ -187,6 +188,16 @@ function watchPrivateIfAdmin() {
 }
 
 let askedLogin = false;
+async function autoLogin(): Promise<boolean> {
+  const saved = (await recallLogin('silent')) ?? (await recallLogin('optional'));
+  if (!saved || get().memberId) return !!get().memberId;
+  try {
+    await team.claimByEmail(saved.email, saved.password);
+    return true;
+  } catch {
+    return false;
+  }
+}
 async function refreshTeam() {
   const deviceId = get().deviceId;
   if (!backend || !deviceId) return;
@@ -201,7 +212,8 @@ async function refreshTeam() {
       // enseguida, así vuelven sus tareas guardadas y los peces.
       if (!team.memberId && !askedLogin) {
         askedLogin = true;
-        set({ authOpen: true });
+        // Si el navegador tiene guardado el acceso (Finance), entra sola, como si nunca se hubiera ido.
+        if (!(await autoLogin())) set({ authOpen: true });
       }
     }
   } catch (e) {
@@ -456,6 +468,8 @@ export const team = {
       else forgetVaultKey(id);
       throw new Error('Mail o contraseña incorrectos.');
     }
+    // Que el navegador la recuerde: la próxima vez entra sola, aunque se borre todo al apagar.
+    void rememberLogin(email, password);
   },
   /**
    * Quien administra pone o cambia la contraseña de alguien (y esa persona la tendrá que cambiar
@@ -473,6 +487,8 @@ export const team = {
       'No pude cambiar la contraseña',
     );
     if (mine && isPrivate) {
+      const email = get().me?.email;
+      if (email) void rememberLogin(email, pw, get().me?.name);
       // Su copia en el servidor se vuelve a cifrar con la contraseña nueva.
       saveVaultKey(memberId, await deriveVaultKey(memberId, pw));
       void import('./vault').then((v) => v.pushVaultNow());
@@ -520,6 +536,7 @@ export const team = {
     const was = get().memberId;
     await wrap(() => backend!.unclaim(d), 'No pude salir');
     if (was) forgetVaultKey(was);
+    void forgetLogin();
     setMember(null, 'choose');
   },
   async becomeAdmin(code: string) {
