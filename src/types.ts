@@ -65,6 +65,8 @@ export interface Task {
   priority?: Priority | null;
   /** Solo en tareas compartidas con otras personas. */
   shared?: SharedInfo;
+  /** Último cambio (para juntar lo de la compu y el celu: gana el más nuevo). */
+  updatedAt?: number;
 }
 
 /** Una tarea terminada, guardada en la bitácora. */
@@ -75,4 +77,6 @@ export interface LogEntry {
   /** Cuánto tardé (minutos). null = sin cargar. */
   minutes: number | null;
   comment: string;
+  /** Último cambio (comentario o minutos). */
+  updatedAt?: number;
 }

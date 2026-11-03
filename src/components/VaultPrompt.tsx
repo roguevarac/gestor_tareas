@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { team, useShared } from '../store/shared';
 import { restartVault, useVault } from '../store/vault';
-import { deriveVaultKey, saveVaultKey } from '../lib/vault';
+import { deriveVaultKey, markKeyConfirmed, saveVaultKey } from '../lib/vault';
 import { firstName } from '../sharing/logic';
 import { Modal } from './Modal';
 import { IconLock } from './Icons';
@@ -27,6 +27,7 @@ export function VaultPrompt() {
       // Se comprueba la contraseña contra el servidor (si no es la correcta, no deja).
       await team.claim(me.uid, pw);
       saveVaultKey(me.uid, await deriveVaultKey(me.uid, pw));
+      markKeyConfirmed(me.uid);
       setPw('');
       restartVault();
     } catch {
@@ -37,7 +38,7 @@ export function VaultPrompt() {
   };
 
   return (
-    <Modal open={needs && !later} onClose={() => setLater(true)} title="Guardar tus tareas">
+    <Modal open={needs && !later} onClose={() => setLater(true)} title="Tus tareas en todos lados">
       <form
         className="auth-form"
         onSubmit={(e) => {
@@ -46,9 +47,9 @@ export function VaultPrompt() {
         }}
       >
         <p className="auth-lead">
-          <IconLock size={16} /> {firstName(me.name)}, para que tus tareas no se pierdan si cambiás de compu o se borra
-          el navegador, se guardan en el servidor <b>cifradas con tu contraseña</b>: nadie más las puede leer, ni
-          quien administra. Confirmala una sola vez.
+          <IconLock size={16} /> {firstName(me.name)}, para ver tus tareas en la compu y en el celu (y que no se pierdan
+          si se borra el navegador), se guardan en el servidor <b>cifradas con tu contraseña</b>: nadie más las puede
+          leer, ni quien administra. Confirmala una sola vez en este dispositivo.
         </p>
         <label className="field">
           <span>Tu contraseña</span>

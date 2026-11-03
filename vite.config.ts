@@ -21,6 +21,8 @@ export default defineConfig(({ mode }) => ({
         registerType: 'prompt',
         injectRegister: false,
         includeAssets: ['favicon.svg'],
+        // Al tocar un aviso, se abre la app.
+        workbox: { importScripts: ['notify-sw.js'] },
         manifest: {
           name: 'Mis tareas',
           short_name: 'Mis tareas',

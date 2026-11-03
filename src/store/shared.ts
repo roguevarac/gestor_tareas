@@ -1,6 +1,7 @@
 import { useMemo } from 'react';
-import { deriveVaultKey, forgetVaultKey, loadVaultKey, saveVaultKey } from '../lib/vault';
+import { deriveVaultKey, forgetVaultKey, loadVaultKey, markKeyConfirmed, saveVaultKey } from '../lib/vault';
 import { forgetLogin, recallLogin, rememberLogin } from '../lib/autoLogin';
+import { askNotify, notify, notifyState } from '../lib/notify';
 import { create } from 'zustand';
 import type { MailLink, Task } from '../types';
 import type { Backend, Country, DocPatch, Profile, SharedDoc } from '../sharing/types';
@@ -187,6 +188,23 @@ function watchPrivateIfAdmin() {
   }, () => {});
 }
 
+/** Una vez por dispositivo: ofrecer avisos cuando te mandan un pez. */
+function offerNotify() {
+  if (notifyState() !== 'default' || readJSON('mis-tareas:notify-offered', false)) return;
+  writeJSON('mis-tareas:notify-offered', true);
+  setTimeout(
+    () =>
+      toast('🔔 ¿Te aviso cuando te manden un pez?', {
+        label: 'Avisarme',
+        run: () =>
+          void askNotify().then((s) =>
+            toast(s === 'granted' ? '🔔 Listo: te aviso cuando te manden un pez' : 'Sin avisos (se pueden activar en la Pecera)'),
+          ),
+      }),
+    2500,
+  );
+}
+
 let askedLogin = false;
 async function autoLogin(): Promise<boolean> {
   const saved = (await recallLogin('silent')) ?? (await recallLogin('optional'));
@@ -235,6 +253,7 @@ function setMember(memberId: string | null, status: SharingStatus) {
     }
   }
   set({ memberId, status, ...(status === 'ready' ? { authOpen: false } : {}) });
+  if (status === 'ready') offerNotify();
   syncMe();
   if (!memberId) updateBadge(0);
 }
@@ -336,7 +355,27 @@ function onDocs(me: string, docs: SharedDoc[]) {
     if (fresh.length) writeJSON(seenKey, [...seen].slice(-500));
   }
 
-  updateBadge(docs.filter((d) => isIncomingFor(d, me)).length);
+  // Aviso del sistema por cada pez nuevo que llega (si la app no está a la vista).
+  const incoming = docs.filter((d) => isIncomingFor(d, me));
+  const notifiedKey = `mis-tareas:notified:${me}`;
+  const notified = readJSON<string[] | null>(notifiedKey, null);
+  if (notified === null) writeJSON(notifiedKey, incoming.map((d) => d.id));
+  else {
+    const known = new Set(notified);
+    const fresh = incoming.filter((d) => !known.has(d.id));
+    for (const d of fresh) {
+      known.add(d.id);
+      const who = firstName(d.names[d.from] ?? 'Alguien');
+      void notify(
+        `🐟 ${who} te mandó un pez`,
+        d.mode === 'joint' ? `«${d.title}» (la hacen juntos)` : `«${d.title}»`,
+        `pez-${d.id}`,
+      );
+    }
+    if (fresh.length) writeJSON(notifiedKey, [...known].slice(-500));
+  }
+
+  updateBadge(incoming.length);
 }
 
 function updateBadge(n: number) {
@@ -437,35 +476,41 @@ export const team = {
     );
     set({ isAdmin: true });
     watchPrivateIfAdmin();
+    saveVaultKey(id, await deriveVaultKey(id, pw));
+    markKeyConfirmed(id);
     setMember(id, 'ready');
   },
   /** "¿Quién sos?": este navegador queda como esa persona (con su contraseña). */
   async claim(memberId: string, password: string) {
     const d = needDevice();
     // Una compu que administra el equipo puede entrar sin contraseña.
-    const hash = password.trim() ? await passwordHash(memberId, password.trim()) : '';
+    const pw = password.trim();
+    const hash = pw ? await passwordHash(memberId, pw) : '';
+    // La llave de su copia cifrada (para ver sus tareas en la compu y el celu) sale de la contraseña y queda
+    // solo en este dispositivo. Se guarda antes de entrar, para que al entrar ya se traigan sus tareas.
+    const hadKey = loadVaultKey(memberId);
+    if (pw) saveVaultKey(memberId, await deriveVaultKey(memberId, pw));
     try {
       await backend!.claim(d, memberId, hash);
     } catch (e) {
       console.error(e);
+      if (pw) {
+        if (hadKey) saveVaultKey(memberId, hadKey);
+        else forgetVaultKey(memberId);
+      }
       if ((e as { code?: string }).code === 'permission-denied') throw new Error('Contraseña incorrecta.');
       throw new Error(errorText(e) ?? 'No pude entrar');
     }
+    if (pw) markKeyConfirmed(memberId);
     setMember(memberId, 'ready');
   },
   /** Entrar con mail y contraseña (personas con acceso privado: no figuran en la lista). */
   async claimByEmail(email: string, password: string) {
     if (!email.trim() || !password.trim()) throw new Error('Poné tu mail y tu contraseña.');
     const id = await privateIdFor(email);
-    // La llave de su copia cifrada sale de la contraseña y queda solo en esta compu
-    // (se guarda antes de entrar, para que al entrar ya pueda recuperar sus tareas).
-    const hadKey = loadVaultKey(id);
-    saveVaultKey(id, await deriveVaultKey(id, password));
     try {
       await team.claim(id, password);
     } catch {
-      if (hadKey) saveVaultKey(id, hadKey);
-      else forgetVaultKey(id);
       throw new Error('Mail o contraseña incorrectos.');
     }
     // Que el navegador la recuerde: la próxima vez entra sola, aunque se borre todo al apagar.
@@ -486,11 +531,14 @@ export const team = {
       async () => backend!.setPassword(memberId, await passwordHash(memberId, pw), byAdmin, isPrivate),
       'No pude cambiar la contraseña',
     );
-    if (mine && isPrivate) {
-      const email = get().me?.email;
-      if (email) void rememberLogin(email, pw, get().me?.name);
+    if (mine) {
+      if (isPrivate) {
+        const email = get().me?.email;
+        if (email) void rememberLogin(email, pw, get().me?.name);
+      }
       // Su copia en el servidor se vuelve a cifrar con la contraseña nueva.
       saveVaultKey(memberId, await deriveVaultKey(memberId, pw));
+      markKeyConfirmed(memberId);
       void import('./vault').then((v) => v.pushVaultNow());
     }
     if (mine && get().me?.mustChangePassword) {
@@ -534,6 +582,8 @@ export const team = {
   async leave() {
     const d = needDevice();
     const was = get().memberId;
+    // Antes de salir, sus tareas quedan guardadas y este navegador queda limpio para la otra persona.
+    await (await import('./vault')).beforeLeave();
     await wrap(() => backend!.unclaim(d), 'No pude salir');
     if (was) forgetVaultKey(was);
     void forgetLogin();

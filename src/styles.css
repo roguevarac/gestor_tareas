@@ -4822,3 +4822,14 @@ body.portal-open {
 .auth-form > .btn-primary + .btn-secondary {
   margin-top: 8px;
 }
+.notify-line {
+  margin: 0 0 8px;
+  font-size: 0.82rem;
+  color: var(--ink-soft);
+}
+.notify-line.is-off {
+  color: #8a5a00;
+}
+.notify-btn {
+  margin-bottom: 10px;
+}

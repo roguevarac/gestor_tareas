@@ -220,6 +220,18 @@ export function createFirebaseBackend(config: Record<string, string>): Backend {
       const v = snap.data();
       return { iv: String(v.iv ?? ''), data: String(v.data ?? ''), updatedAt: Number(v.updatedAt ?? 0) };
     },
+    watchVault(memberId, cb, onError) {
+      return onSnapshot(
+        doc(db, 'vaults', memberId),
+        (snap) => {
+          if (snap.metadata.hasPendingWrites) return;
+          if (!snap.exists()) return cb(null);
+          const v = snap.data();
+          cb({ iv: String(v.iv ?? ''), data: String(v.data ?? ''), updatedAt: Number(v.updatedAt ?? 0) });
+        },
+        onError,
+      );
+    },
     putVault: (memberId, v) => setDoc(doc(db, 'vaults', memberId), { iv: v.iv, data: v.data, updatedAt: v.updatedAt }),
     async rulesOk() {
       try {

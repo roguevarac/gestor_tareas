@@ -294,6 +294,27 @@ const SECTIONS: Section[] = [
         keys: 'instalar escritorio',
       },
       {
+        title: 'En el celu',
+        text: (
+          <>
+            Abrí el link de la app en el celu. <b>Android</b> (Chrome): menú ⋮ → <K>Instalar app</K>.{' '}
+            <b>iPhone</b> (Safari): <K>Compartir</K> → <K>Agregar a inicio</K>. Entrás con tu nombre y contraseña y
+            ves las mismas tareas que en la compu: lo que cambiás en un lado aparece en el otro.
+          </>
+        ),
+        keys: 'celular telefono iphone android sincronizar',
+      },
+      {
+        title: 'Avisos de peces',
+        text: (
+          <>
+            En la Pecera, <K>Avisarme cuando me manden un pez</K>: te llega un aviso aunque la app esté minimizada o en
+            otra ventana. Tocándolo se abre la app.
+          </>
+        ),
+        keys: 'notificaciones avisos campana',
+      },
+      {
         title: 'Actualizaciones',
         text: (
           <>
@@ -306,8 +327,10 @@ const SECTIONS: Section[] = [
         title: '¿Dónde se guarda todo?',
         text: (
           <>
-            Tus tareas personales, en esta compu. Las compartidas, en el servidor del equipo. Tus tareas abiertas y lo
-            que terminás en el día se ven en <b>Tareas del equipo</b>.
+            Tus tareas y tu bitácora se guardan en el servidor <b>cifradas con tu contraseña</b>: nadie más las puede
+            leer. Por eso son las mismas en la compu y en el celu, y si se borra el navegador vuelven al entrar. Las
+            compartidas, en el servidor del equipo. Tus tareas abiertas y lo que terminás en el día se ven en{' '}
+            <b>Tareas del equipo</b> (salvo Finance).
           </>
         ),
         keys: 'datos guardar',

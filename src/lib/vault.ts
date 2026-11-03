@@ -1,12 +1,19 @@
 /**
- * Copia cifrada de las tareas en el servidor (para Finance).
+ * Copia cifrada de las tareas en el servidor (para verlas en la compu y en el celu).
  * La llave sale de la contraseña de la persona: el servidor (y quien administra Firebase) solo ve datos
  * cifrados que nadie más puede leer.
  */
 
 const enc = new TextEncoder();
 const dec = new TextDecoder();
-const keyName = (memberId: string) => `mis-tareas:vault-key:${memberId}`;
+import { demoHandle } from '../sharing/mode';
+
+/** En modo prueba, cada "dispositivo" (?demo=…) tiene lo suyo aunque compartan navegador. */
+export const localNS = (() => {
+  const d = demoHandle();
+  return d ? `:demo:${d}` : '';
+})();
+const keyName = (memberId: string) => `mis-tareas:vault-key${localNS}:${memberId}`;
 
 const toB64 = (buf: ArrayBuffer | Uint8Array) => {
   const bytes = buf instanceof Uint8Array ? buf : new Uint8Array(buf);
@@ -71,3 +78,8 @@ export async function unseal<T>(sealed: Sealed, key: string): Promise<T | null> 
     return null;
   }
 }
+
+/** Llaves que en esta sesión salieron de una contraseña comprobada contra el servidor (la de ahora). */
+const confirmed = new Set<string>();
+export const markKeyConfirmed = (memberId: string) => void confirmed.add(memberId);
+export const isKeyConfirmed = (memberId: string) => confirmed.has(memberId);

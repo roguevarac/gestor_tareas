@@ -14,8 +14,16 @@ function isStandalone(): boolean {
   );
 }
 
+const isIOS = () => /iPhone|iPad|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+const isMobile = () => isIOS() || /Android|Mobile/.test(navigator.userAgent);
+
 function browserHint(): string {
   const ua = navigator.userAgent;
+  if (isIOS())
+    return /CriOS|FxiOS|EdgiOS/.test(ua)
+      ? 'En iPhone se instala desde Safari: abrí este link en Safari, tocá Compartir (□↑) → Agregar a inicio.'
+      : 'Tocá Compartir (el cuadrado con la flecha □↑) → Agregar a inicio.';
+  if (/Android/.test(ua)) return 'Tocá el menú ⋮ (arriba a la derecha) → Instalar app o Agregar a pantalla principal.';
   if (/Edg\//.test(ua)) return 'En Edge: menú ⋯ (arriba a la derecha) → Aplicaciones → Instalar Mis tareas.';
   if (/Chrome\//.test(ua) && !/OPR\//.test(ua))
     return 'En Chrome: el ícono de instalar a la derecha de la barra de direcciones, o menú ⋮ → Instalar Mis tareas.';
@@ -43,7 +51,11 @@ export function InstallBanner() {
     if (forced || !dismissed) setShow(true);
     const onInstalled = () => {
       setShow(false);
-      toast('🐟 ¡Listo! Mis tareas quedó instalada: la encontrás en el menú Inicio y en el escritorio');
+      toast(
+        isMobile()
+          ? '🐟 ¡Listo! Mis tareas quedó en tu pantalla de inicio'
+          : '🐟 ¡Listo! Mis tareas quedó instalada: la encontrás en el menú Inicio y en el escritorio',
+      );
     };
     window.addEventListener('appinstalled', onInstalled);
     return () => window.removeEventListener('appinstalled', onInstalled);
@@ -72,7 +84,9 @@ export function InstallBanner() {
           <div className="install-text">
             <strong>Instalá Mis tareas como app</strong>
             <span>
-              Queda con su ícono en el escritorio y la barra de tareas, y se abre en su propia ventana.
+              {isMobile()
+                ? 'Queda con su ícono en la pantalla de inicio, como cualquier app.'
+                : 'Queda con su ícono en el escritorio y la barra de tareas, y se abre en su propia ventana.'}
               {!install.canInstall && <> {browserHint()}</>}
             </span>
           </div>

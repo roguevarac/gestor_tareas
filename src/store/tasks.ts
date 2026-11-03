@@ -48,7 +48,8 @@ export interface TasksState {
   replaceAll(data: { tasks: Task[]; log: LogEntry[] }): void;
 }
 
-const mapTask = (tasks: Task[], id: string, fn: (t: Task) => Task) => tasks.map((t) => (t.id === id ? fn(t) : t));
+const mapTask = (tasks: Task[], id: string, fn: (t: Task) => Task) =>
+  tasks.map((t) => (t.id === id ? { ...fn(t), updatedAt: Date.now() } : t));
 
 export const useTasks = create<TasksState>()(
   persist(
@@ -71,6 +72,7 @@ export const useTasks = create<TasksState>()(
           mails: [],
           subtasks: [],
           priority,
+          updatedAt: Date.now(),
         };
         set((s) => ({ tasks: [task, ...s.tasks], toneCursor: s.toneCursor + 1 }));
         return id;
@@ -149,6 +151,7 @@ export const useTasks = create<TasksState>()(
           // Tiempo que había medido el cronómetro de la 1.0, si quedó alguno.
           minutes: pendingMinutes ?? null,
           comment: '',
+          updatedAt: Date.now(),
         };
         set((s) => ({ tasks: s.tasks.filter((t) => t.id !== id), log: [entry, ...s.log] }));
         return entry.id;
@@ -163,13 +166,14 @@ export const useTasks = create<TasksState>()(
           completedAt: opts?.completedAt ?? Date.now(),
           minutes: null,
           comment: opts?.comment ?? '',
+          updatedAt: Date.now(),
         };
         set((s) => ({ log: [entry, ...s.log] }));
         return entry.id;
       },
 
       updateLog(id, patch) {
-        set((s) => ({ log: s.log.map((e) => (e.id === id ? { ...e, ...patch } : e)) }));
+        set((s) => ({ log: s.log.map((e) => (e.id === id ? { ...e, ...patch, updatedAt: Date.now() } : e)) }));
       },
 
       restoreFromLog(id) {
@@ -177,7 +181,9 @@ export const useTasks = create<TasksState>()(
         if (!entry) return;
         set((s) => ({
           log: s.log.filter((e) => e.id !== id),
-          tasks: s.tasks.some((t) => t.id === entry.task.id) ? s.tasks : [entry.task, ...s.tasks],
+          tasks: s.tasks.some((t) => t.id === entry.task.id)
+            ? s.tasks
+            : [{ ...entry.task, updatedAt: Date.now() }, ...s.tasks],
         }));
       },
 

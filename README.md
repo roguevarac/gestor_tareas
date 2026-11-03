@@ -166,6 +166,15 @@ Source: GitHub Actions**. En repos privados, GitHub Pages necesita un plan pago 
 
 ## Cambios
 
+### 2.5
+
+- **Tus tareas en la compu y en el celu**: las tareas y la bitácora de cada persona se guardan en el servidor,
+  cifradas con su contraseña, y se sincronizan en vivo entre sus dispositivos (gana el último cambio; lo terminado o
+  borrado no revive). Cada dispositivo pide la contraseña una vez.
+- *No soy …* guarda todo y deja el navegador limpio para la otra persona.
+- **Avisos** cuando te mandan un pez (Pecera → *Avisarme cuando me manden un pez*).
+- El cartel de instalar explica cómo hacerlo en Android y iPhone.
+
 ### 2.4.3
 
 - Finance no tiene el botón *No soy …*.

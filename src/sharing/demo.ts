@@ -195,6 +195,17 @@ export function createDemoBackend(handle: string): Backend {
       if (db.claims[device] !== memberId) throw denied();
       return db.vaults?.[memberId] ?? null;
     },
+    watchVault(memberId, cb) {
+      let last = -1;
+      return subscribe(() => {
+        const db = load();
+        if (db.claims[device] !== memberId) return;
+        const v = db.vaults?.[memberId] ?? null;
+        if ((v?.updatedAt ?? 0) === last) return;
+        last = v?.updatedAt ?? 0;
+        cb(v);
+      });
+    },
     async putVault(memberId, v) {
       const db = load();
       if (db.claims[device] !== memberId) throw denied();

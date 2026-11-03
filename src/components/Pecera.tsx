@@ -4,6 +4,7 @@ import { useUI } from '../store/ui';
 import { firstName } from '../sharing/logic';
 import { ago, todayLong } from '../lib/time';
 import { useVault } from '../store/vault';
+import { askNotify, notifyState, type NotifyState } from '../lib/notify';
 import { Modal } from './Modal';
 import { SpeciesFish } from './Fishes';
 import { Avatar } from './Avatar';
@@ -52,7 +53,7 @@ export function Pecera() {
                   <IconLock size={12} /> Finance: nadie ve tus tareas; solo lo que vos mandes o te manden.
                 </small>
               )}
-              {me.private && <VaultStatus />}
+              <VaultStatus />
               <MyPassword memberId={me.uid} />
             </div>
             {/* Finance no tiene "No soy …": su compu es suya y entra sola. */}
@@ -85,6 +86,7 @@ export function Pecera() {
         <h3>
           Te mandaron <span className="pond-count">{incoming.length}</span>
         </h3>
+        <NotifyToggle />
         {incoming.length === 0 ? (
           <p className="muted small">No hay peces esperando.</p>
         ) : (
@@ -356,16 +358,44 @@ function TeamSection() {
   );
 }
 
-/** Finance: si su copia cifrada está al día. */
+/** Avisos del sistema cuando te mandan un pez. */
+function NotifyToggle() {
+  const [state, setState] = useState<NotifyState>(() => notifyState());
+  const toast = useUI((s) => s.toast);
+  if (state === 'unsupported') return null;
+  if (state === 'granted') return <p className="notify-line">🔔 Te aviso cuando te manden un pez.</p>;
+  if (state === 'denied')
+    return (
+      <p className="notify-line is-off">
+        🔕 Los avisos están bloqueados en este navegador. Se activan desde el candado de la barra de direcciones →
+        Notificaciones → Permitir.
+      </p>
+    );
+  return (
+    <button
+      type="button"
+      className="btn btn-secondary btn-sm notify-btn"
+      onClick={async () => {
+        const s = await askNotify();
+        setState(s);
+        if (s === 'granted') toast('🔔 Listo: te aviso cuando te manden un pez');
+      }}
+    >
+      🔔 Avisarme cuando me manden un pez
+    </button>
+  );
+}
+
+/** Si su copia cifrada está al día (tareas iguales en la compu y el celu). */
 function VaultStatus() {
   const { state, savedAt } = useVault();
   const text =
     state === 'ok'
-      ? `Tus tareas están guardadas (cifradas)${savedAt ? ` · ${ago(savedAt)}` : ''}`
+      ? `Tus tareas están sincronizadas (cifradas)${savedAt ? ` · ${ago(savedAt)}` : ''}`
       : state === 'loading'
         ? 'Buscando tus tareas guardadas…'
         : state === 'needs-key'
-          ? 'Tus tareas todavía no se guardan en el servidor'
+          ? 'Tus tareas todavía no se sincronizan'
           : state === 'error'
             ? 'No pude guardar tus tareas; lo vuelvo a intentar'
             : null;

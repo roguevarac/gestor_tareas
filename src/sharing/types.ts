@@ -147,6 +147,12 @@ export interface Backend {
   /** Copia cifrada de las tareas (solo la puede leer y escribir la persona misma). */
   getVault(memberId: string): Promise<{ iv: string; data: string; updatedAt: number } | null>;
   putVault(memberId: string, v: { iv: string; data: string; updatedAt: number }): Promise<void>;
+  /** En vivo: cuando la cambia otro dispositivo. */
+  watchVault(
+    memberId: string,
+    cb: (v: { iv: string; data: string; updatedAt: number } | null) => void,
+    onError: (e: unknown) => void,
+  ): () => void;
   /** ¿Las reglas publicadas en el servidor son las de esta versión? */
   rulesOk(): Promise<boolean>;
   deleteBoard(memberId: string): Promise<void>;
